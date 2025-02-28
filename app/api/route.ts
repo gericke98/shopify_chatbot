@@ -555,7 +555,6 @@ async function handleOrderTracking(
   }
 
   const shopifyData = await trackOrder(order_number, email);
-  console.log("Shopify data:", shopifyData);
   if (!shopifyData.success) {
     if (shopifyData.error === "InvalidOrderNumber") {
       const prompt =
