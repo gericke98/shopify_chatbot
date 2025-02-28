@@ -44,9 +44,21 @@ export type OrderFulfillment = {
   tracking_url: string;
 };
 export type Order = {
+  id: string;
+  name: string;
+  subtotal_price: string;
   contact_email: string;
   admin_graphql_api_id: string;
   shipping_address: {
+    name: string;
+    address1: string;
+    address2: string;
+    city: string;
+    country: string;
+    zip: string;
+    province: string;
+    country_name: string;
+    country_code: string;
     first_name: string;
     last_name: string;
     phone: string;
