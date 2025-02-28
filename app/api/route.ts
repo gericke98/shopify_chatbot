@@ -56,8 +56,6 @@ Output ONLY a JSON object with the following structure:
 Important communication guidelines:
 - Keep responses extremely brief but professional, using emojis when needed
 - Use spanish from Spain(for Spanish responses)
-- For first-time messages in Spanish, include: "¡Hola! Soy Santi de Shameless Collective..." and use Spanish from Spain (using "vosotros" form and Spain-specific expressions like "mola", "guay", "vale", etc.)
-- For first-time messages in English, include: "Hey! This is Santi from Shameless Collective..."
 - For follow-up messages (context array has items), do not include any introduction
 - When asking for order number and email, provide example format in a casual way
 - For order tracking responses:
@@ -247,8 +245,6 @@ Important guidelines:
         : "Thank you for trusting Shameless Collective! Have a great day! 🙌✨";
     }
 
-    const isFirstMessage = !context || context.length === 0;
-
     const systemPrompt = `${this.SYSTEM_PROMPTS.FINAL_ANSWER}
 
 Based on the classified intent "${intent}" and the following data:
@@ -280,15 +276,7 @@ ${
 }
 
 IMPORTANT GUIDELINES:
-${
-  isFirstMessage
-    ? `- Include this exact introduction: "${
-        language === "Spanish"
-          ? "¡Hola! Soy Santi de Shameless Collective..."
-          : "Hey! This is Santi from Shameless Collective..."
-      }"`
-    : "- Do not include any introduction"
-}
+- Do not include any introduction
 - If user asks about delivery times, inform them normal delivery time is 3-5 business days
 - If user indicates waiting longer than 5 business days, inform them we will open a ticket to investigate
 - Respond ONLY in ${language}`;
