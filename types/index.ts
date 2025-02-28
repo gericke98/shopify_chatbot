@@ -10,6 +10,8 @@ export type Intent =
   | "delivery_issue"
   | "product_sizing"
   | "conversation_end"
+  | "other-general"
+  | "other-order"
   | "other";
 
 export type ClassifiedMessage = {

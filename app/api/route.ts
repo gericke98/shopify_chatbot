@@ -31,10 +31,12 @@ Consider both user messages and system responses in the conversation context whe
 - If user asks about changing the size of a product from their order, classify it as returns_exchange intent
 - If user asks about product sizes or sizing information, classify it as product_sizing intent
 - If the user says "thank you", "thanks", "gracias", "ok", "perfect", "perfecto" or similar closing remarks without asking anything else, classify it as "conversation_end"
+- For queries that don't match other intents but are about an order (shipping, delivery, order status, etc), classify as "other-order"
+- For queries that don't match other intents and are not related to any order, classify as "other-general"
 
 Output ONLY a JSON object with the following structure:
 {
-  "intent": one of ["order_tracking", "returns_exchange", "change_delivery", "return_status", "promo_code", "other", "delivery_issue", "conversation_end", "product_sizing"],
+  "intent": one of ["order_tracking", "returns_exchange", "change_delivery", "return_status", "promo_code", "other-order", "other-general", "delivery_issue", "conversation_end", "product_sizing"],
   "parameters": {
     "order_number": "extracted order number or empty string",
     "email": "extracted email or empty string", 
@@ -121,7 +123,7 @@ Important guidelines:
 
   private getDefaultClassification(): ClassifiedMessage {
     return {
-      intent: "other",
+      intent: "other-general",
       parameters: {
         order_number: "",
         email: "",
@@ -165,7 +167,7 @@ Important guidelines:
     context?: { role: string; content: string }[]
   ) {
     if (context?.length) {
-      if (classification.intent === "other") {
+      if (classification.intent === "other-general") {
         this.inheritPreviousIntent(classification, context);
       }
 
@@ -194,7 +196,7 @@ Important guidelines:
           const prevClassification = JSON.parse(msg.content);
           if (
             prevClassification.intent &&
-            prevClassification.intent !== "other"
+            prevClassification.intent !== "other-general"
           ) {
             classification.intent = prevClassification.intent;
             classification.parameters = {
@@ -270,8 +272,8 @@ ${
 }
 
 ${
-  intent === "other"
-    ? "IMPORTANT: Since this is an 'other' intent, carefully analyze the conversation context to provide a relevant response that addresses any previous interactions and maintains continuity."
+  intent === "other-order"
+    ? "IMPORTANT: Since this is an 'other-order' intent, carefully analyze the conversation context to provide a relevant response that addresses any previous interactions and maintains continuity."
     : "Provide a concise response that directly addresses the customer's needs. If you don't have enough information, briefly ask for the specific details needed."
 }
 
@@ -465,10 +467,42 @@ export async function POST(req: Request): Promise<Response> {
         );
         break;
 
-      case "promo_code":
-        console.log("Promo code intent");
+      case "other-order":
+        console.log("Other order-related intent");
+        if (!parameters.order_number || !parameters.email) {
+          response =
+            language === "Spanish"
+              ? "Para ayudarte mejor con tu consulta sobre el pedido, necesito el número de pedido (tipo #12345) y tu email 😊"
+              : "To better help you with your order-related query, I need your order number (like #12345) and email 😊";
+        } else {
+          const orderData = await trackOrder(
+            parameters.order_number,
+            parameters.email
+          );
+          response = await aiService.generateFinalAnswer(
+            intent,
+            parameters,
+            orderData,
+            message,
+            context,
+            language
+          );
+        }
+        break;
+
+      case "other-general":
+        console.log("Other general intent");
+        response = await aiService.generateFinalAnswer(
+          intent,
+          parameters,
+          null,
+          message,
+          context,
+          language
+        );
+        break;
+
       default:
-        console.log("Other intent");
         response = await aiService.generateFinalAnswer(
           intent,
           parameters,
