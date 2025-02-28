@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^0.10.4",
     "axios": "^1.7.9",
     "drizzle-orm": "^0.39.3",
     "next": "14.2.24",
