@@ -284,6 +284,8 @@ ${
 
 IMPORTANT GUIDELINES:
 - Do not include any introduction
+- Do not use markdown formatting or smart bolding
+- When sharing links, provide them directly (e.g., "https://example.com" instead of "[Click here](https://example.com)")
 - If user asks about delivery times, inform them normal delivery time is 3-5 business days
 - If user indicates waiting longer than 5 business days, inform them we will open a ticket to investigate
 - Respond ONLY in ${language}`;
