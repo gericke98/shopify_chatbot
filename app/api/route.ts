@@ -273,7 +273,12 @@ ${
 
 ${
   intent === "other-order"
-    ? "IMPORTANT: Since this is an 'other-order' intent, carefully analyze the conversation context to provide a relevant response that addresses any previous interactions and maintains continuity."
+    ? `IMPORTANT: Since this is an 'other-order' intent:
+- Carefully analyze the conversation context to provide a relevant response
+- If user asks about shipping address, check shopifyData.shipping_address object
+- If user asks about billing address, check shopifyData.billing_address object
+- If user asks about their personal information, check shopifyData.customer object
+- Maintain continuity with any previous interactions`
     : "Provide a concise response that directly addresses the customer's needs. If you don't have enough information, briefly ask for the specific details needed."
 }
 
@@ -479,6 +484,7 @@ export async function POST(req: Request): Promise<Response> {
             parameters.order_number,
             parameters.email
           );
+          console.log("Order data:", orderData);
           response = await aiService.generateFinalAnswer(
             intent,
             parameters,
