@@ -1,0 +1,104 @@
+// Define the supported intents.
+export type Intent =
+  | "order_tracking"
+  | "product_inquiry"
+  | "returns_exchange"
+  | "change_delivery"
+  | "return_status"
+  | "promo_code"
+  | "returns_policy"
+  | "delivery_issue"
+  | "product_sizing"
+  | "conversation_end"
+  | "other";
+
+export type ClassifiedMessage = {
+  intent: Intent;
+  parameters: {
+    order_number: string;
+    email: string;
+    product_handle: string;
+    new_delivery_info: string;
+    delivery_status: string;
+    tracking_number: string;
+    delivery_address_confirmed: boolean;
+    return_type: string;
+    returns_website_sent: boolean;
+    product_name: string;
+    size_query: string;
+  };
+  language: string;
+};
+
+export type OrderFulfillment = {
+  id: number;
+  admin_graphql_api_id: string;
+  created_at: string;
+  location_id: number;
+  name: string;
+  order_id: number;
+  shipment_status: string;
+  status: string;
+  tracking_company: string;
+  tracking_number: string;
+  tracking_url: string;
+};
+export type Order = {
+  contact_email: string;
+  admin_graphql_api_id: string;
+  shipping_address: {
+    first_name: string;
+    last_name: string;
+    phone: string;
+  };
+  fulfillments: OrderFulfillment[];
+};
+
+export type OrderLineItem = {
+  id: string;
+  title: string;
+  price: string;
+  variant_id: string;
+  variant_title: string;
+  quantity: number;
+  action: string | null;
+  reason?: string;
+  confirmed?: boolean;
+  changed?: boolean;
+  new_variant_id?: string;
+  new_variant_title?: string;
+  discount_allocations?: DiscountAllocation[];
+  product_id: number;
+};
+export type DiscountAllocation = {
+  amount: number;
+};
+
+export type ChatMessage = {
+  role: string;
+  content: string;
+};
+
+export type ShopifyData = {
+  success: boolean;
+  order: Order[];
+};
+
+export type ShopifyDataTracking = {
+  success: boolean;
+  error?: "InvalidOrderNumber" | "EmailMismatch" | undefined;
+  order?: Order | undefined;
+};
+
+export type ShopifyDataProduct = {
+  success: boolean;
+  product?: Product;
+};
+export type Product = {
+  title: string;
+  description: string;
+  images: Image[];
+};
+export type Image = {
+  src: string;
+};
