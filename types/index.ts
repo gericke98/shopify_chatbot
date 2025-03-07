@@ -12,7 +12,7 @@ export type Intent =
   | "conversation_end"
   | "other-general"
   | "other-order"
-  | "other";
+  | "update_order";
 
 export type ClassifiedMessage = {
   intent: Intent;
@@ -28,6 +28,7 @@ export type ClassifiedMessage = {
     returns_website_sent: boolean;
     product_name: string;
     size_query: string;
+    update_type: string;
   };
   language: string;
 };
@@ -115,4 +116,28 @@ export type Product = {
 };
 export type Image = {
   src: string;
+};
+
+export type OpenAIResponse = {
+  choices: Array<{
+    message: {
+      content: string;
+    };
+  }>;
+};
+
+export type Message = {
+  sender: "user" | "bot";
+  text: string;
+  timestamp: string;
+  ticketId?: string;
+};
+
+export type Ticket = {
+  id: string;
+  orderNumber: string | null;
+  email: string | null;
+  createdAt: string;
+  updatedAt: string;
+  status: string;
 };

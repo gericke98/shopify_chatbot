@@ -1,18 +1,16 @@
 "use client";
 import { useState, useEffect, useRef, FormEvent } from "react";
 import Image from "next/image";
-
-interface Message {
-  sender: "user" | "bot";
-  text: string;
-  timestamp: string;
-}
+import { toast, Toaster } from "sonner";
+import { Message, Ticket } from "@/types";
+import { createTicket } from "./actions/tickets";
 
 export default function Home(): JSX.Element {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [language, setLanguage] = useState<"English" | "Spanish">("English");
+  const [currentTicket, setCurrentTicket] = useState<Ticket | null>(null);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -45,18 +43,25 @@ export default function Home(): JSX.Element {
       content: msg.text,
     }));
 
-    setMessages((prev) => [
-      ...prev,
-      {
-        sender: "user",
-        text: trimmedMessage,
-        timestamp: new Date().toLocaleTimeString(),
-      },
-    ]);
+    const userMessage = {
+      sender: "user" as const,
+      text: trimmedMessage,
+      timestamp: new Date().toLocaleTimeString(),
+    };
+    if (messages.length === 1) {
+      // Caso de primer mensaje
+      const ticket = await createTicket();
+      if (ticket.status === 200 && ticket.data) {
+        setCurrentTicket(ticket.data);
+      }
+    }
+
+    setMessages((prev) => [...prev, userMessage]);
     setInputMessage("");
     setIsLoading(true);
 
     try {
+      // Vamos con chatgpt
       const res = await fetch("/api", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -64,36 +69,55 @@ export default function Home(): JSX.Element {
           message: trimmedMessage,
           context,
           language,
+          currentTicket,
         }),
       });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "An error occurred");
+      }
+
       const data = await res.json();
-      setMessages((prev) => [
-        ...prev,
-        {
-          sender: "bot",
-          text: data.response,
-          timestamp: new Date().toLocaleTimeString(),
-        },
-      ]);
+      console.log("data returned", data);
+      if (data.updatedTicket) {
+        setCurrentTicket(data.updatedTicket.data);
+      }
+      const botMessage = {
+        sender: "bot" as const,
+        text: data.response,
+        timestamp: new Date().toLocaleTimeString(),
+        currentTicket,
+      };
+
+      setMessages((prev) => [...prev, botMessage]);
     } catch (error) {
-      console.log(error);
-      setMessages((prev) => [
-        ...prev,
-        {
-          sender: "bot",
-          text:
-            language === "English"
-              ? "Sorry, something went wrong. Please try again."
-              : "Lo siento, algo salió mal. Por favor, inténtalo de nuevo.",
-          timestamp: new Date().toLocaleTimeString(),
-        },
-      ]);
+      console.error("Error in chat request:", error);
+
+      const errorMessage =
+        language === "English"
+          ? "Sorry, something went wrong. Please try again."
+          : "Lo siento, algo salió mal. Por favor, inténtalo de nuevo.";
+
+      toast.error(errorMessage, {
+        duration: 5000,
+        position: "top-center",
+      });
+
+      const botErrorMessage = {
+        sender: "bot" as const,
+        text: errorMessage,
+        timestamp: new Date().toLocaleTimeString(),
+      };
+
+      setMessages((prev) => [...prev, botErrorMessage]);
     }
     setIsLoading(false);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
+      <Toaster />
       <div className="max-w-4xl mx-auto min-h-screen p-4 sm:p-6">
         {/* Header */}
         <header className="mb-4 sm:mb-6">

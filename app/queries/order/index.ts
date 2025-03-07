@@ -157,7 +157,6 @@ export async function updateShippingAddress(
 
     const gptData = await gptResponse.json();
     const parsedAddress = JSON.parse(gptData.choices[0].message.content);
-    console.log(parsedAddress);
 
     // Map province names to autonomous community codes
     const provinceCodeMap: { [key: string]: string } = {
@@ -242,7 +241,6 @@ export async function updateShippingAddress(
       error: "Failed to validate address",
     };
   }
-  console.log(addressComponents);
 
   try {
     const query = `mutation updateOrderMetafields($input: OrderInput!) {
@@ -295,8 +293,6 @@ export async function updateShippingAddress(
     );
 
     const data = await response.json();
-    console.log("Data");
-    console.log(data);
 
     if (!data.data?.orderUpdate) {
       return {
