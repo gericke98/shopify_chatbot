@@ -2,7 +2,7 @@
   "node": {
     "473566c5d74e57705d82f03ad3b0e57406af7346": {
       "workers": {
-        "app/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot%2Fapp%2Factions%2Ftickets.ts%22%2C%5B%22updateTicketWithOrderInfo%22%2C%22createTicket%22%5D%5D%5D&__client_imported__=true!"
+        "app/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot%2Fapp%2Factions%2Ftickets.ts%22%2C%5B%22updateTicketWithOrderInfo%22%2C%22addMessageToTicket%22%2C%22createTicket%22%5D%5D%5D&__client_imported__=true!"
       },
       "layer": {
         "app/page": "action-browser"
@@ -10,7 +10,15 @@
     },
     "18dc6842b27857fc00e736899371bc1de6c24856": {
       "workers": {
-        "app/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot%2Fapp%2Factions%2Ftickets.ts%22%2C%5B%22updateTicketWithOrderInfo%22%2C%22createTicket%22%5D%5D%5D&__client_imported__=true!"
+        "app/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot%2Fapp%2Factions%2Ftickets.ts%22%2C%5B%22updateTicketWithOrderInfo%22%2C%22addMessageToTicket%22%2C%22createTicket%22%5D%5D%5D&__client_imported__=true!"
+      },
+      "layer": {
+        "app/page": "action-browser"
+      }
+    },
+    "1fb07ad077892b49c60c1bc36d057f385d68439a": {
+      "workers": {
+        "app/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot%2Fapp%2Factions%2Ftickets.ts%22%2C%5B%22updateTicketWithOrderInfo%22%2C%22addMessageToTicket%22%2C%22createTicket%22%5D%5D%5D&__client_imported__=true!"
       },
       "layer": {
         "app/page": "action-browser"

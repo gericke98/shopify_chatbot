@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, FormEvent } from "react";
 import Image from "next/image";
 import { toast, Toaster } from "sonner";
 import { Message, Ticket } from "@/types";
-import { createTicket } from "./actions/tickets";
+import { addMessageToTicket, createTicket } from "./actions/tickets";
 
 export default function Home(): JSX.Element {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -50,12 +50,13 @@ export default function Home(): JSX.Element {
     };
     if (messages.length === 1) {
       // Caso de primer mensaje
-      const ticket = await createTicket();
+      const ticket = await createTicket(userMessage);
       if (ticket.status === 200 && ticket.data) {
         setCurrentTicket(ticket.data);
       }
+    } else {
+      await addMessageToTicket(currentTicket?.id, userMessage);
     }
-
     setMessages((prev) => [...prev, userMessage]);
     setInputMessage("");
     setIsLoading(true);
@@ -91,6 +92,7 @@ export default function Home(): JSX.Element {
       };
 
       setMessages((prev) => [...prev, botMessage]);
+      await addMessageToTicket(currentTicket?.id, botMessage);
     } catch (error) {
       console.error("Error in chat request:", error);
 
