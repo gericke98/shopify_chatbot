@@ -166,10 +166,9 @@ export async function handleChangeDelivery(
       );
     }
 
-    const addressValidation = await aiService.validateAddress(
-      new_delivery_info
-    );
-
+    const addressValidation =
+      await aiService.validateAddress(new_delivery_info);
+    console.log("addressValidation", addressValidation);
     if (!addressValidation.formattedAddress) {
       return await aiService.confirmDeliveryAddress(
         parameters,

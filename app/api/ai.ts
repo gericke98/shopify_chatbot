@@ -374,8 +374,8 @@ export class AIService {
           Array.isArray(shopifyData.order)
             ? shopifyData.order[0]?.fulfillments?.length === 0
             : shopifyData.order?.fulfillments?.length === 0
-            ? "Order is still being prepared"
-            : "Tracking available in fulfillments array"
+              ? "Order is still being prepared"
+              : "Tracking available in fulfillments array"
         }`
       : ""
   }
@@ -466,8 +466,8 @@ export class AIService {
             .map((addr: string, i: number) => `${i + 1}. ${addr}`)
             .join("\n")}`
       : language === "Spanish"
-      ? `¿Es esta la dirección correcta?\n\n${addressValidation.formattedAddress}\n\nPor favor, responde "sí" para confirmar o proporciona la dirección correcta si no lo es 😊`
-      : `Is this the right address?\n\n${addressValidation.formattedAddress}\n\nPlease reply "yes" to confirm or provide the correct address if it's not 😊`
+        ? `¿Es esta la dirección correcta?\n\n${addressValidation.formattedAddress}\n\nPor favor, responde "sí" para confirmar o proporciona la dirección correcta si no lo es 😊`
+        : `Is this the right address?\n\n${addressValidation.formattedAddress}\n\nPlease reply "yes" to confirm or provide the correct address if it's not 😊`
   }
   
   IMPORTANT: Respond ONLY in ${language || "English"}`;
@@ -492,6 +492,7 @@ export class AIService {
   }
 
   async validateAddress(address: string) {
+    console.log("Entro en validateAddress", address);
     if (!address || typeof address !== "string") {
       return {
         formattedAddress: "",
