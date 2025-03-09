@@ -294,10 +294,10 @@ export default function TicketsPage(): JSX.Element {
                       ticket.status === "open"
                         ? "bg-green-100 text-green-800"
                         : ticket.status === "admin-handled"
-                        ? "bg-purple-100 text-purple-800"
-                        : ticket.status === "closed"
-                        ? "bg-gray-100 text-gray-800"
-                        : "bg-blue-100 text-blue-800"
+                          ? "bg-purple-100 text-purple-800"
+                          : ticket.status === "closed"
+                            ? "bg-gray-100 text-gray-800"
+                            : "bg-blue-100 text-blue-800"
                     }`}
                   >
                     {ticket.status === "admin-handled"
@@ -345,8 +345,8 @@ export default function TicketsPage(): JSX.Element {
                       selectedTicket.status === "open"
                         ? "bg-green-100 text-green-800"
                         : selectedTicket.status === "admin-handled"
-                        ? "bg-purple-100 text-purple-800"
-                        : "bg-gray-100 text-gray-800"
+                          ? "bg-purple-100 text-purple-800"
+                          : "bg-gray-100 text-gray-800"
                     }`}
                   >
                     {selectedTicket.status === "admin-handled"
@@ -430,8 +430,8 @@ export default function TicketsPage(): JSX.Element {
                       message.sender === "user"
                         ? "justify-end"
                         : message.sender === "admin"
-                        ? "justify-end"
-                        : "justify-start"
+                          ? "justify-end"
+                          : "justify-start"
                     }`}
                   >
                     {message.sender === "bot" && (
@@ -456,8 +456,8 @@ export default function TicketsPage(): JSX.Element {
                         message.sender === "user"
                           ? "bg-blue-600 text-white"
                           : message.sender === "admin"
-                          ? "bg-purple-600 text-white"
-                          : "bg-white text-gray-800"
+                            ? "bg-purple-600 text-white"
+                            : "bg-white text-gray-800"
                       }`}
                     >
                       {message.sender === "admin" && (

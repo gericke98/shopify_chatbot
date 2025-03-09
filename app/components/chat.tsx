@@ -4,19 +4,13 @@ import Image from "next/image";
 import { Message, Ticket } from "@/types";
 import { addMessageToTicket } from "../actions/tickets";
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { useEventSource } from "@/app/hooks/useEventSource";
 
 type ChatProps = {
   inputmessages: Message[];
   inputcurrentTicket: Ticket | undefined;
-  ticketId: string;
 };
 
-export const Chat = ({
-  inputmessages,
-  inputcurrentTicket,
-  ticketId,
-}: ChatProps) => {
+export const Chat = ({ inputmessages, inputcurrentTicket }: ChatProps) => {
   const [language, setLanguage] = useState<"English" | "Spanish">("English");
   const [inputMessage, setInputMessage] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -25,18 +19,6 @@ export const Chat = ({
     inputcurrentTicket
   );
   const chatEndRef = useRef<HTMLDivElement | null>(null);
-
-  // Use SSE to get real-time updates
-  const { data: sseData } = useEventSource<{ messages: Message[] }>(
-    `/api?ticketId=${ticketId}`
-  );
-
-  // Update messages when SSE data changes
-  useEffect(() => {
-    if (sseData?.messages && sseData.messages.length > 0) {
-      setMessages(sseData.messages);
-    }
-  }, [sseData]);
 
   // Initial setup from props
   useEffect(() => {
@@ -70,8 +52,6 @@ export const Chat = ({
 
     await addMessageToTicket(currentTicket?.id, userMessage);
 
-    // Optimistically add user message to UI
-    // setMessages((prev) => [...prev, userMessage]);
     setInputMessage("");
     setIsLoading(true);
 

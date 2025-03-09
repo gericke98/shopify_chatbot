@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createTicket } from "./actions/tickets";
 
 export default async function Home(): Promise<JSX.Element> {
+  console.log("Home page loaded");
   // Create a new ticket with welcome message
   const ticket = await createTicket({
     sender: "bot",

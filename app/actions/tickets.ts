@@ -6,6 +6,14 @@ import { eq } from "drizzle-orm";
 import { Message, Ticket, CustomerData } from "@/types";
 import { revalidatePath } from "next/cache";
 
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString);
+  return (
+    date.toLocaleDateString() +
+    " " +
+    date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+  );
+};
 // GET ACTIONS
 export async function getTickets(): Promise<Ticket[]> {
   const tickets = await db.query.tickets.findMany();
@@ -36,15 +44,15 @@ export async function createTicket(userMessage: Message) {
         orderNumber: null,
         email: null,
         status: "open",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        createdAt: formatDate(new Date().toISOString()),
+        updatedAt: formatDate(new Date().toISOString()),
         admin: false,
       })
       .returning();
     await db.insert(messages).values({
       sender: userMessage.sender,
       content: userMessage.content,
-      timestamp: new Date().toISOString(),
+      timestamp: formatDate(new Date().toISOString()),
       ticketId: newTicket[0].id,
     });
 
@@ -115,7 +123,7 @@ export async function addMessageToTicket(
     await db.insert(messages).values({
       sender: message.sender,
       content: message.content,
-      timestamp: new Date().toISOString(),
+      timestamp: formatDate(new Date().toISOString()),
       ticketId,
     });
 
