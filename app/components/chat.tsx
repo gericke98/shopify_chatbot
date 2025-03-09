@@ -3,7 +3,14 @@ import { toast, Toaster } from "sonner";
 import Image from "next/image";
 import { Message, Ticket } from "@/types";
 import { addMessageToTicket } from "../actions/tickets";
-import { FormEvent, useEffect, useRef, useState } from "react";
+import {
+  FormEvent,
+  useEffect,
+  useRef,
+  useState,
+  useCallback,
+  useMemo,
+} from "react";
 
 type ChatProps = {
   inputmessages: Message[];
@@ -14,104 +21,207 @@ export const Chat = ({ inputmessages, inputcurrentTicket }: ChatProps) => {
   const [language, setLanguage] = useState<"English" | "Spanish">("English");
   const [inputMessage, setInputMessage] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isInitialLoading, setIsInitialLoading] = useState<boolean>(true);
   const [messages, setMessages] = useState<Message[]>(inputmessages);
   const [currentTicket, setCurrentTicket] = useState<Ticket | undefined>(
     inputcurrentTicket
   );
+  const [retryCount, setRetryCount] = useState<number>(0);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
+  const MAX_RETRIES = 3;
 
   // Initial setup from props
   useEffect(() => {
-    setMessages(inputmessages);
-    setCurrentTicket(inputcurrentTicket);
+    try {
+      setMessages(inputmessages);
+      setCurrentTicket(inputcurrentTicket);
+    } catch (error) {
+      toast.error(`Error loading initial data: ${error}`, {
+        duration: 5000,
+        position: "top-center",
+      });
+    } finally {
+      setIsInitialLoading(false);
+    }
   }, [inputmessages, inputcurrentTicket]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
-    e.preventDefault();
-    const trimmedMessage = inputMessage.trim();
-    if (!trimmedMessage) return;
-
-    const context = inputmessages.map((msg) => ({
-      role: msg.sender === "user" ? "user" : "system",
-      content: msg.content,
-    }));
-
-    const userMessage = {
-      sender: "user" as const,
-      content: trimmedMessage,
-      timestamp: new Date().toLocaleTimeString(),
+    const scrollToBottom = () => {
+      chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
-    // const ticketToUse = currentTicket;
-    console.log("currentTicket:", currentTicket);
+    scrollToBottom();
 
-    await addMessageToTicket(currentTicket?.id, userMessage);
+    // For cases where images might load after render
+    const timeoutId = setTimeout(scrollToBottom, 100);
 
-    setInputMessage("");
-    setIsLoading(true);
+    return () => clearTimeout(timeoutId);
+  }, [messages]);
 
-    try {
-      // Only call AI if no admin has taken over
-      if (!currentTicket?.admin) {
-        const res = await fetch("/api", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            message: trimmedMessage,
-            context,
-            language,
-            currentTicket: currentTicket,
-          }),
-        });
+  const errorMessageByLanguage = useMemo(
+    () => ({
+      English: "Sorry, something went wrong. Please try again.",
+      Spanish: "Lo siento, algo salió mal. Por favor, inténtalo de nuevo.",
+    }),
+    []
+  );
 
-        if (!res.ok) {
-          throw new Error("API request failed");
-        }
+  const handleLanguageChange = useCallback(
+    (e: React.ChangeEvent<HTMLSelectElement>) => {
+      setLanguage(e.target.value as "English" | "Spanish");
+    },
+    []
+  );
 
-        const data = await res.json();
+  const handleInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setInputMessage(e.target.value);
+    },
+    []
+  );
 
-        if (data.updatedTicket) {
-          setCurrentTicket(data.updatedTicket.data);
-        }
+  const handleSubmit = useCallback(
+    async (e: FormEvent<HTMLFormElement>): Promise<void> => {
+      e.preventDefault();
+      const trimmedMessage = inputMessage.trim();
+      if (!trimmedMessage) return;
 
-        const botMessage = {
-          sender: "bot" as const,
-          content: data.response,
-          timestamp: new Date().toLocaleTimeString(),
-        };
+      const context = messages.map((msg) => ({
+        role: msg.sender === "user" ? "user" : "system",
+        content: msg.content,
+      }));
 
-        // setMessages((prev) => [...prev, botMessage]);
-        await addMessageToTicket(currentTicket?.id, botMessage);
-      }
-    } catch (error) {
-      console.error("Error in chat request:", error);
-
-      const errorMessage =
-        language === "English"
-          ? "Sorry, something went wrong. Please try again."
-          : "Lo siento, algo salió mal. Por favor, inténtalo de nuevo.";
-
-      toast.error(errorMessage, {
-        duration: 5000,
-        position: "top-center",
-      });
-
-      const botErrorMessage = {
-        sender: "bot" as const,
-        content: errorMessage,
+      const userMessage = {
+        sender: "user" as const,
+        content: trimmedMessage,
         timestamp: new Date().toLocaleTimeString(),
       };
-      await addMessageToTicket(currentTicket?.id, botErrorMessage);
-      // setMessages((prev) => [...prev, botErrorMessage]);
-    }
 
-    setIsLoading(false);
+      setInputMessage("");
+      setIsLoading(true);
+      setRetryCount(0);
+
+      try {
+        await addMessageToTicket(currentTicket?.id, userMessage);
+
+        // Only call AI if no admin has taken over
+        if (!currentTicket?.admin) {
+          await sendMessageToAI(
+            trimmedMessage,
+            context,
+            language,
+            currentTicket
+          );
+        }
+      } catch (error) {
+        console.error("Error submitting message:", error);
+        const errorMessage = errorMessageByLanguage[language];
+
+        toast.error(errorMessage, {
+          duration: 5000,
+          position: "top-center",
+        });
+
+        try {
+          const botErrorMessage = {
+            sender: "bot" as const,
+            content: errorMessage,
+            timestamp: new Date().toLocaleTimeString(),
+          };
+          await addMessageToTicket(currentTicket?.id, botErrorMessage);
+        } catch (addMsgError) {
+          console.error("Error adding message:", addMsgError);
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [messages, inputMessage, currentTicket, language, errorMessageByLanguage]
+  );
+
+  const sendMessageToAI = async (
+    message: string,
+    context: { role: string; content: string }[],
+    language: "English" | "Spanish",
+    ticket?: Ticket
+  ): Promise<void> => {
+    try {
+      const res = await fetch("/api", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message,
+          context,
+          language,
+          currentTicket: ticket,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`API request failed with status ${res.status}`);
+      }
+
+      const data = await res.json();
+
+      if (data.updatedTicket) {
+        setCurrentTicket(data.updatedTicket.data);
+      }
+
+      const botMessage = {
+        sender: "bot" as const,
+        content: data.response,
+        timestamp: new Date().toLocaleTimeString(),
+      };
+
+      await addMessageToTicket(currentTicket?.id, botMessage);
+    } catch (error) {
+      // Implement retry logic
+      if (retryCount < MAX_RETRIES) {
+        setRetryCount((prev) => prev + 1);
+        await new Promise((resolve) => setTimeout(resolve, 1000 * retryCount));
+        return sendMessageToAI(message, context, language, ticket);
+      }
+      throw error; // Re-throw if max retries exceeded
+    }
   };
+
+  const placeholderText = useMemo(
+    () =>
+      language === "English" ? "Type your message..." : "Escribe tu mensaje...",
+    [language]
+  );
+
+  const buttonText = useMemo(
+    () => (language === "English" ? "Send" : "Enviar"),
+    [language]
+  );
+
+  const headerText = useMemo(
+    () =>
+      language === "English"
+        ? "Customer Support Assistant"
+        : "Asistente de Atención al Cliente",
+    [language]
+  );
+
+  if (isInitialLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex items-center justify-center">
+        <div className="flex space-x-2">
+          <div className="w-3 h-3 bg-blue-500 rounded-full animate-bounce"></div>
+          <div
+            className="w-3 h-3 bg-blue-500 rounded-full animate-bounce"
+            style={{ animationDelay: "0.2s" }}
+          ></div>
+          <div
+            className="w-3 h-3 bg-blue-500 rounded-full animate-bounce"
+            style={{ animationDelay: "0.4s" }}
+          ></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
@@ -131,9 +241,7 @@ export const Chat = ({ inputmessages, inputcurrentTicket }: ChatProps) => {
             </div>
             <select
               value={language}
-              onChange={(e) =>
-                setLanguage(e.target.value as "English" | "Spanish")
-              }
+              onChange={handleLanguageChange}
               className="w-full sm:w-auto px-3 sm:px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="English">English</option>
@@ -141,9 +249,7 @@ export const Chat = ({ inputmessages, inputcurrentTicket }: ChatProps) => {
             </select>
           </div>
           <p className="text-base sm:text-lg text-gray-700 font-medium text-center sm:text-left">
-            {language === "English"
-              ? "Customer Support Assistant"
-              : "Asistente de Atención al Cliente"}
+            {headerText}
           </p>
         </header>
 
@@ -200,13 +306,9 @@ export const Chat = ({ inputmessages, inputcurrentTicket }: ChatProps) => {
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
             <input
               type="text"
-              placeholder={
-                language === "English"
-                  ? "Type your message..."
-                  : "Escribe tu mensaje..."
-              }
+              placeholder={placeholderText}
               value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
+              onChange={handleInputChange}
               className="flex-1 text-black border border-gray-300 rounded-xl px-4 sm:px-6 py-3 sm:py-4 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
               required
             />
@@ -215,7 +317,7 @@ export const Chat = ({ inputmessages, inputcurrentTicket }: ChatProps) => {
               disabled={isLoading}
               className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl hover:opacity-90 transition-all disabled:from-gray-400 disabled:to-gray-500 shadow-sm"
             >
-              {language === "English" ? "Send" : "Enviar"}
+              {buttonText}
             </button>
           </div>
         </form>
