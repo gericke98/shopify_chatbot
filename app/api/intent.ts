@@ -1,4 +1,4 @@
-import { ChatMessage, ClassifiedMessage } from "@/types";
+import { ClassifiedMessage, OpenAIMessage } from "@/types";
 import {
   extractCompleteOrder,
   extractProduct,
@@ -10,31 +10,26 @@ import { sendEmail } from "./mail";
 
 export async function NoOrderNumberOrEmail(
   parameters: ClassifiedMessage["parameters"],
-  context: ChatMessage[],
+  context: OpenAIMessage[],
   language: string
 ): Promise<string> {
   const prompt =
     language === "Spanish"
-      ? "¡Ey! Necesito el número de pedido (tipo #12345) y tu email para poder ayudarte 😊"
+      ? "Perfecto! Necesito el número de pedido (tipo #12345) y tu email para poder ayudarte 😊"
       : "Hey! I need your order number (like #12345) and email to help you out 😊";
-  return await aiService.generateFinalAnswer(
-    "order_tracking",
-    parameters,
-    null,
-    prompt,
-    context,
-    language
-  );
+  return prompt;
 }
 
 export async function InvalidCredentials(
   parameters: ClassifiedMessage["parameters"],
-  context: ChatMessage[],
+  context: OpenAIMessage[],
   language: string,
   error: "InvalidOrderNumber" | "EmailMismatch" | undefined
 ): Promise<string> {
   let prompt = "";
+  console.log("error", error);
   if (error === "InvalidOrderNumber") {
+    console.log("InvalidOrderNumber");
     prompt =
       language === "Spanish"
         ? "¡Vaya! No encuentro ningún pedido con ese número 😅 ¿Puedes revisarlo y volver a intentarlo?"
@@ -42,24 +37,18 @@ export async function InvalidCredentials(
   }
 
   if (error === "EmailMismatch") {
+    console.log("EmailMismatch");
     prompt =
       language === "Spanish"
         ? "¡Ups! El email no coincide con el del pedido 🤔 ¿Puedes revisar si es el correcto?"
         : "Oops! The email doesn't match the order 🤔 Can you check if it's the right one?";
   }
-  return await aiService.generateFinalAnswer(
-    "order_tracking",
-    parameters,
-    null,
-    prompt,
-    context,
-    language
-  );
+  return prompt;
 }
 
 export async function handleOrderTracking(
   parameters: ClassifiedMessage["parameters"],
-  context: ChatMessage[],
+  context: OpenAIMessage[],
   language: string
 ): Promise<string> {
   const { order_number, email } = parameters;
@@ -91,7 +80,7 @@ export async function handleOrderTracking(
 export async function handleDeliveryIssue(
   parameters: ClassifiedMessage["parameters"],
   message: string,
-  context: ChatMessage[],
+  context: OpenAIMessage[],
   language: string
 ): Promise<string> {
   try {
@@ -136,7 +125,7 @@ export async function handleDeliveryIssue(
 export async function handleChangeDelivery(
   parameters: ClassifiedMessage["parameters"],
   message: string,
-  context: ChatMessage[],
+  context: OpenAIMessage[],
   language: string
 ): Promise<string> {
   const { order_number, email, new_delivery_info, delivery_address_confirmed } =
@@ -226,7 +215,7 @@ export async function handleChangeDelivery(
 export async function handleUpdateOrder(
   parameters: ClassifiedMessage["parameters"],
   message: string,
-  context: ChatMessage[],
+  context: OpenAIMessage[],
   language: string
 ): Promise<string> {
   const { order_number, email, update_type } = parameters;
@@ -287,7 +276,7 @@ export async function handleUpdateOrder(
 export async function handleProductInquiry(
   parameters: ClassifiedMessage["parameters"],
   message: string,
-  context: ChatMessage[],
+  context: OpenAIMessage[],
   language: string
 ): Promise<string> {
   const { product_name } = parameters;

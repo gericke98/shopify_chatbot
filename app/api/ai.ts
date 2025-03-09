@@ -1,7 +1,7 @@
 import {
-  ChatMessage,
   ClassifiedMessage,
   Intent,
+  OpenAIMessage,
   OpenAIResponse,
   ShopifyData,
   ShopifyDataTracking,
@@ -86,7 +86,7 @@ export class AIService {
     "https://shameless-returns-web.vercel.app";
   private readonly MODEL = "gpt-4o-mini";
   private readonly MAX_RETRIES = 3;
-  private readonly RETRY_DELAY = 1000; // ms
+  private readonly RETRY_DELAY = 1000;
 
   constructor() {
     const apiKey = process.env.OPENAI_API_KEY;
@@ -100,7 +100,7 @@ export class AIService {
   }
 
   private async callOpenAI(
-    messages: ChatMessage[],
+    messages: OpenAIMessage[],
     temperature = 0,
     retryCount = 0
   ): Promise<OpenAIResponse> {
@@ -142,7 +142,6 @@ export class AIService {
 
         throw new Error(`OpenAI API error: ${response.status} ${errorText}`);
       }
-
       return response.json();
     } catch (error) {
       console.error("Error calling OpenAI:", error);
@@ -183,7 +182,7 @@ export class AIService {
 
   async classifyMessage(
     message: string,
-    context?: { role: string; content: string }[]
+    context?: OpenAIMessage[]
   ): Promise<ClassifiedMessage> {
     if (!message || typeof message !== "string") {
       console.error("Invalid message provided for classification:", message);
@@ -324,7 +323,7 @@ export class AIService {
     parameters: ClassifiedMessage["parameters"],
     shopifyData: ShopifyData | null | ShopifyDataTracking,
     userMessage: string,
-    context?: { role: string; content: string }[],
+    context?: OpenAIMessage[],
     language?: string
   ): Promise<string> {
     // Validate inputs

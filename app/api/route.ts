@@ -2,13 +2,71 @@ import { NextResponse } from "next/server";
 import { trackOrder } from "../queries/order";
 import { updateTicketWithOrderInfo } from "../actions/tickets";
 import { aiService } from "./ai";
+import { NextRequest } from "next/server";
+import { getMessages } from "@/app/actions/tickets";
 import {
   handleChangeDelivery,
   handleDeliveryIssue,
   handleProductInquiry,
   handleUpdateOrder,
+  InvalidCredentials,
+  NoOrderNumberOrEmail,
 } from "./intent";
 import { handleOrderTracking } from "./intent";
+export const dynamic = "force-dynamic";
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  console.log("SSE endpoint hit");
+  const ticketId = params.id;
+
+  // Set headers for SSE
+  const headers = {
+    "Content-Type": "text/event-stream",
+    "Cache-Control": "no-cache, no-transform",
+    Connection: "keep-alive",
+  };
+
+  const encoder = new TextEncoder();
+
+  // Create a stream
+  const stream = new ReadableStream({
+    async start(controller) {
+      // Function to send messages
+      const sendMessages = async () => {
+        try {
+          const messages = await getMessages(ticketId);
+          const data = JSON.stringify({ messages });
+          controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+        } catch (error) {
+          console.error("Error fetching messages:", error);
+          controller.enqueue(
+            encoder.encode(
+              `data: ${JSON.stringify({
+                error: "Failed to fetch messages",
+              })}\n\n`
+            )
+          );
+        }
+      };
+
+      // Send initial messages
+      await sendMessages();
+
+      // Set up interval to check for new messages
+      const interval = setInterval(sendMessages, 2000);
+
+      // Clean up on close
+      request.signal.addEventListener("abort", () => {
+        clearInterval(interval);
+      });
+    },
+  });
+
+  return new Response(stream, { headers });
+}
 
 export async function POST(req: Request): Promise<Response> {
   try {
@@ -54,13 +112,14 @@ export async function POST(req: Request): Promise<Response> {
         ))
     ) {
       return NextResponse.json(
-        { error: "Context must be an array of {role, content} objects" },
+        { error: "Context must be an array of {role, text} objects" },
         { status: 400 }
       );
     }
-
+    console.log("Classifying...");
     const classification = await aiService.classifyMessage(message, context);
     const { intent, parameters, language } = classification;
+
     let updatedTicket = null;
     if (
       currentTicket?.id &&
@@ -68,10 +127,31 @@ export async function POST(req: Request): Promise<Response> {
       parameters.email &&
       (!currentTicket.orderNumber || !currentTicket.email)
     ) {
+      // Validar info de shopify
+      const { order_number, email } = parameters;
+      if (!order_number || !email) {
+        const response = await NoOrderNumberOrEmail(
+          parameters,
+          context,
+          language
+        );
+        return NextResponse.json({ response });
+      }
+      const shopifyData = await trackOrder(order_number, email);
+      if (!shopifyData.success) {
+        const response = await InvalidCredentials(
+          parameters,
+          context,
+          language,
+          shopifyData.error
+        );
+        return NextResponse.json({ response });
+      }
       updatedTicket = await updateTicketWithOrderInfo(
         currentTicket.id,
         parameters.order_number,
-        parameters.email
+        parameters.email,
+        shopifyData.order?.customer
       );
     }
     console.log("Message classification:", { intent, parameters, language });
@@ -144,7 +224,6 @@ export async function POST(req: Request): Promise<Response> {
             parameters.order_number,
             parameters.email
           );
-          console.log("Order data:", orderData);
           response = await aiService.generateFinalAnswer(
             intent,
             parameters,

@@ -326,8 +326,6 @@ export async function extractProduct(productName: string): Promise<{
   product?: ShopifyDataProduct | null;
 }> {
   const productShopify = await getProductQuery(productName);
-  console.log("Product Shopify");
-  console.log(productShopify);
 
   if (!productShopify) {
     return { success: false, product: null };

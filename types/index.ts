@@ -66,6 +66,7 @@ export type Order = {
     last_name: string;
     phone: string;
   };
+  customer: CustomerData | undefined;
   fulfillments: OrderFulfillment[];
 };
 
@@ -87,11 +88,6 @@ export type OrderLineItem = {
 };
 export type DiscountAllocation = {
   amount: number;
-};
-
-export type ChatMessage = {
-  role: string;
-  content: string;
 };
 
 export type ShopifyData = {
@@ -126,13 +122,6 @@ export type OpenAIResponse = {
   }>;
 };
 
-export type Message = {
-  sender: "user" | "bot";
-  text: string;
-  timestamp: string;
-  ticketId?: string;
-};
-
 export type Ticket = {
   id: string;
   orderNumber: string | null;
@@ -140,4 +129,24 @@ export type Ticket = {
   createdAt: string;
   updatedAt: string;
   status: string;
+  name: string | null;
+  admin: boolean;
+};
+
+export type Message = {
+  id?: number;
+  sender: string;
+  content: string;
+  timestamp: string;
+  ticketId?: string | null;
+};
+
+export type OpenAIMessage = {
+  role: string;
+  content: string;
+};
+
+export type CustomerData = {
+  first_name: string;
+  last_name: string;
 };

@@ -1,30 +1,114 @@
 {
   "node": {
-    "473566c5d74e57705d82f03ad3b0e57406af7346": {
+    "c9f233a648c5b83f8eca6a896a84aeaf251abf95": {
       "workers": {
-        "app/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot%2Fapp%2Factions%2Ftickets.ts%22%2C%5B%22updateTicketWithOrderInfo%22%2C%22addMessageToTicket%22%2C%22createTicket%22%5D%5D%5D&__client_imported__=true!"
+        "app/page": "(rsc)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot%2Fapp%2Fpage.tsx%22%2C%5B%22default%22%5D%5D%2C%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot%2Fapp%2Factions%2Ftickets.ts%22%2C%5B%22updateTicketWithOrderInfo%22%2C%22addMessageToTicket%22%2C%22createTicket%22%2C%22getMessages%22%2C%22getTicket%22%2C%22getTickets%22%2C%22updateTicketAdmin%22%5D%5D%5D&__client_imported__=!"
       },
       "layer": {
-        "app/page": "action-browser"
+        "app/page": "rsc"
       }
     },
     "18dc6842b27857fc00e736899371bc1de6c24856": {
       "workers": {
-        "app/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot%2Fapp%2Factions%2Ftickets.ts%22%2C%5B%22updateTicketWithOrderInfo%22%2C%22addMessageToTicket%22%2C%22createTicket%22%5D%5D%5D&__client_imported__=true!"
+        "app/page": "(rsc)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot%2Fapp%2Fpage.tsx%22%2C%5B%22default%22%5D%5D%2C%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot%2Fapp%2Factions%2Ftickets.ts%22%2C%5B%22updateTicketWithOrderInfo%22%2C%22addMessageToTicket%22%2C%22createTicket%22%2C%22getMessages%22%2C%22getTicket%22%2C%22getTickets%22%2C%22updateTicketAdmin%22%5D%5D%5D&__client_imported__=!",
+        "app/[id]/page": "(rsc)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot%2Fapp%2F%5Bid%5D%2Fpage.tsx%22%2C%5B%22default%22%2C%22refreshTicketData%22%5D%5D%2C%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot%2Fapp%2Factions%2Ftickets.ts%22%2C%5B%22updateTicketWithOrderInfo%22%2C%22addMessageToTicket%22%2C%22createTicket%22%2C%22getMessages%22%2C%22getTicket%22%2C%22getTickets%22%2C%22updateTicketAdmin%22%5D%5D%5D&__client_imported__=!",
+        "app/tickets/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot%2Fapp%2Factions%2Ftickets.ts%22%2C%5B%22updateTicketWithOrderInfo%22%2C%22addMessageToTicket%22%2C%22createTicket%22%2C%22getMessages%22%2C%22getTicket%22%2C%22getTickets%22%2C%22updateTicketAdmin%22%5D%5D%5D&__client_imported__=true!"
       },
       "layer": {
-        "app/page": "action-browser"
+        "app/page": "rsc",
+        "app/[id]/page": "rsc",
+        "app/tickets/page": "action-browser"
       }
     },
     "1fb07ad077892b49c60c1bc36d057f385d68439a": {
       "workers": {
-        "app/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot%2Fapp%2Factions%2Ftickets.ts%22%2C%5B%22updateTicketWithOrderInfo%22%2C%22addMessageToTicket%22%2C%22createTicket%22%5D%5D%5D&__client_imported__=true!"
+        "app/page": "(rsc)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot%2Fapp%2Fpage.tsx%22%2C%5B%22default%22%5D%5D%2C%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot%2Fapp%2Factions%2Ftickets.ts%22%2C%5B%22updateTicketWithOrderInfo%22%2C%22addMessageToTicket%22%2C%22createTicket%22%2C%22getMessages%22%2C%22getTicket%22%2C%22getTickets%22%2C%22updateTicketAdmin%22%5D%5D%5D&__client_imported__=!",
+        "app/[id]/page": "(rsc)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot%2Fapp%2F%5Bid%5D%2Fpage.tsx%22%2C%5B%22default%22%2C%22refreshTicketData%22%5D%5D%2C%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot%2Fapp%2Factions%2Ftickets.ts%22%2C%5B%22updateTicketWithOrderInfo%22%2C%22addMessageToTicket%22%2C%22createTicket%22%2C%22getMessages%22%2C%22getTicket%22%2C%22getTickets%22%2C%22updateTicketAdmin%22%5D%5D%5D&__client_imported__=!",
+        "app/tickets/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot%2Fapp%2Factions%2Ftickets.ts%22%2C%5B%22updateTicketWithOrderInfo%22%2C%22addMessageToTicket%22%2C%22createTicket%22%2C%22getMessages%22%2C%22getTicket%22%2C%22getTickets%22%2C%22updateTicketAdmin%22%5D%5D%5D&__client_imported__=true!"
       },
       "layer": {
-        "app/page": "action-browser"
+        "app/page": "rsc",
+        "app/[id]/page": "rsc",
+        "app/tickets/page": "action-browser"
+      }
+    },
+    "473566c5d74e57705d82f03ad3b0e57406af7346": {
+      "workers": {
+        "app/page": "(rsc)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot%2Fapp%2Fpage.tsx%22%2C%5B%22default%22%5D%5D%2C%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot%2Fapp%2Factions%2Ftickets.ts%22%2C%5B%22updateTicketWithOrderInfo%22%2C%22addMessageToTicket%22%2C%22createTicket%22%2C%22getMessages%22%2C%22getTicket%22%2C%22getTickets%22%2C%22updateTicketAdmin%22%5D%5D%5D&__client_imported__=!",
+        "app/[id]/page": "(rsc)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot%2Fapp%2F%5Bid%5D%2Fpage.tsx%22%2C%5B%22default%22%2C%22refreshTicketData%22%5D%5D%2C%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot%2Fapp%2Factions%2Ftickets.ts%22%2C%5B%22updateTicketWithOrderInfo%22%2C%22addMessageToTicket%22%2C%22createTicket%22%2C%22getMessages%22%2C%22getTicket%22%2C%22getTickets%22%2C%22updateTicketAdmin%22%5D%5D%5D&__client_imported__=!",
+        "app/tickets/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot%2Fapp%2Factions%2Ftickets.ts%22%2C%5B%22updateTicketWithOrderInfo%22%2C%22addMessageToTicket%22%2C%22createTicket%22%2C%22getMessages%22%2C%22getTicket%22%2C%22getTickets%22%2C%22updateTicketAdmin%22%5D%5D%5D&__client_imported__=true!"
+      },
+      "layer": {
+        "app/page": "rsc",
+        "app/[id]/page": "rsc",
+        "app/tickets/page": "action-browser"
+      }
+    },
+    "697dc994124abcf2c6ec89c78cef4a9cc8c945bd": {
+      "workers": {
+        "app/page": "(rsc)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot%2Fapp%2Fpage.tsx%22%2C%5B%22default%22%5D%5D%2C%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot%2Fapp%2Factions%2Ftickets.ts%22%2C%5B%22updateTicketWithOrderInfo%22%2C%22addMessageToTicket%22%2C%22createTicket%22%2C%22getMessages%22%2C%22getTicket%22%2C%22getTickets%22%2C%22updateTicketAdmin%22%5D%5D%5D&__client_imported__=!",
+        "app/[id]/page": "(rsc)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot%2Fapp%2F%5Bid%5D%2Fpage.tsx%22%2C%5B%22default%22%2C%22refreshTicketData%22%5D%5D%2C%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot%2Fapp%2Factions%2Ftickets.ts%22%2C%5B%22updateTicketWithOrderInfo%22%2C%22addMessageToTicket%22%2C%22createTicket%22%2C%22getMessages%22%2C%22getTicket%22%2C%22getTickets%22%2C%22updateTicketAdmin%22%5D%5D%5D&__client_imported__=!",
+        "app/tickets/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot%2Fapp%2Factions%2Ftickets.ts%22%2C%5B%22updateTicketWithOrderInfo%22%2C%22addMessageToTicket%22%2C%22createTicket%22%2C%22getMessages%22%2C%22getTicket%22%2C%22getTickets%22%2C%22updateTicketAdmin%22%5D%5D%5D&__client_imported__=true!"
+      },
+      "layer": {
+        "app/page": "rsc",
+        "app/[id]/page": "rsc",
+        "app/tickets/page": "action-browser"
+      }
+    },
+    "a403c6e152d273cd4129829b40121d867d84a92e": {
+      "workers": {
+        "app/page": "(rsc)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot%2Fapp%2Fpage.tsx%22%2C%5B%22default%22%5D%5D%2C%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot%2Fapp%2Factions%2Ftickets.ts%22%2C%5B%22updateTicketWithOrderInfo%22%2C%22addMessageToTicket%22%2C%22createTicket%22%2C%22getMessages%22%2C%22getTicket%22%2C%22getTickets%22%2C%22updateTicketAdmin%22%5D%5D%5D&__client_imported__=!",
+        "app/[id]/page": "(rsc)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot%2Fapp%2F%5Bid%5D%2Fpage.tsx%22%2C%5B%22default%22%2C%22refreshTicketData%22%5D%5D%2C%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot%2Fapp%2Factions%2Ftickets.ts%22%2C%5B%22updateTicketWithOrderInfo%22%2C%22addMessageToTicket%22%2C%22createTicket%22%2C%22getMessages%22%2C%22getTicket%22%2C%22getTickets%22%2C%22updateTicketAdmin%22%5D%5D%5D&__client_imported__=!",
+        "app/tickets/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot%2Fapp%2Factions%2Ftickets.ts%22%2C%5B%22updateTicketWithOrderInfo%22%2C%22addMessageToTicket%22%2C%22createTicket%22%2C%22getMessages%22%2C%22getTicket%22%2C%22getTickets%22%2C%22updateTicketAdmin%22%5D%5D%5D&__client_imported__=true!"
+      },
+      "layer": {
+        "app/page": "rsc",
+        "app/[id]/page": "rsc",
+        "app/tickets/page": "action-browser"
+      }
+    },
+    "ecfe0da7a0de2be4cc8d3774fdd0076ebe12f0a1": {
+      "workers": {
+        "app/page": "(rsc)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot%2Fapp%2Fpage.tsx%22%2C%5B%22default%22%5D%5D%2C%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot%2Fapp%2Factions%2Ftickets.ts%22%2C%5B%22updateTicketWithOrderInfo%22%2C%22addMessageToTicket%22%2C%22createTicket%22%2C%22getMessages%22%2C%22getTicket%22%2C%22getTickets%22%2C%22updateTicketAdmin%22%5D%5D%5D&__client_imported__=!",
+        "app/[id]/page": "(rsc)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot%2Fapp%2F%5Bid%5D%2Fpage.tsx%22%2C%5B%22default%22%2C%22refreshTicketData%22%5D%5D%2C%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot%2Fapp%2Factions%2Ftickets.ts%22%2C%5B%22updateTicketWithOrderInfo%22%2C%22addMessageToTicket%22%2C%22createTicket%22%2C%22getMessages%22%2C%22getTicket%22%2C%22getTickets%22%2C%22updateTicketAdmin%22%5D%5D%5D&__client_imported__=!",
+        "app/tickets/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot%2Fapp%2Factions%2Ftickets.ts%22%2C%5B%22updateTicketWithOrderInfo%22%2C%22addMessageToTicket%22%2C%22createTicket%22%2C%22getMessages%22%2C%22getTicket%22%2C%22getTickets%22%2C%22updateTicketAdmin%22%5D%5D%5D&__client_imported__=true!"
+      },
+      "layer": {
+        "app/page": "rsc",
+        "app/[id]/page": "rsc",
+        "app/tickets/page": "action-browser"
+      }
+    },
+    "fa8db310c55fd570653f2384872df781204a75c8": {
+      "workers": {
+        "app/page": "(rsc)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot%2Fapp%2Fpage.tsx%22%2C%5B%22default%22%5D%5D%2C%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot%2Fapp%2Factions%2Ftickets.ts%22%2C%5B%22updateTicketWithOrderInfo%22%2C%22addMessageToTicket%22%2C%22createTicket%22%2C%22getMessages%22%2C%22getTicket%22%2C%22getTickets%22%2C%22updateTicketAdmin%22%5D%5D%5D&__client_imported__=!",
+        "app/[id]/page": "(rsc)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot%2Fapp%2F%5Bid%5D%2Fpage.tsx%22%2C%5B%22default%22%2C%22refreshTicketData%22%5D%5D%2C%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot%2Fapp%2Factions%2Ftickets.ts%22%2C%5B%22updateTicketWithOrderInfo%22%2C%22addMessageToTicket%22%2C%22createTicket%22%2C%22getMessages%22%2C%22getTicket%22%2C%22getTickets%22%2C%22updateTicketAdmin%22%5D%5D%5D&__client_imported__=!",
+        "app/tickets/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot%2Fapp%2Factions%2Ftickets.ts%22%2C%5B%22updateTicketWithOrderInfo%22%2C%22addMessageToTicket%22%2C%22createTicket%22%2C%22getMessages%22%2C%22getTicket%22%2C%22getTickets%22%2C%22updateTicketAdmin%22%5D%5D%5D&__client_imported__=true!"
+      },
+      "layer": {
+        "app/page": "rsc",
+        "app/[id]/page": "rsc",
+        "app/tickets/page": "action-browser"
+      }
+    },
+    "aaac30ad09fd71f1449947973a54c021b4d32830": {
+      "workers": {
+        "app/[id]/page": "(rsc)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot%2Fapp%2F%5Bid%5D%2Fpage.tsx%22%2C%5B%22default%22%2C%22refreshTicketData%22%5D%5D%2C%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot%2Fapp%2Factions%2Ftickets.ts%22%2C%5B%22updateTicketWithOrderInfo%22%2C%22addMessageToTicket%22%2C%22createTicket%22%2C%22getMessages%22%2C%22getTicket%22%2C%22getTickets%22%2C%22updateTicketAdmin%22%5D%5D%5D&__client_imported__=!"
+      },
+      "layer": {
+        "app/[id]/page": "rsc"
+      }
+    },
+    "db3c9f2749ae3438e622a16be5d1b2b93dd6a127": {
+      "workers": {
+        "app/[id]/page": "(rsc)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot%2Fapp%2F%5Bid%5D%2Fpage.tsx%22%2C%5B%22default%22%2C%22refreshTicketData%22%5D%5D%2C%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot%2Fapp%2Factions%2Ftickets.ts%22%2C%5B%22updateTicketWithOrderInfo%22%2C%22addMessageToTicket%22%2C%22createTicket%22%2C%22getMessages%22%2C%22getTicket%22%2C%22getTickets%22%2C%22updateTicketAdmin%22%5D%5D%5D&__client_imported__=!"
+      },
+      "layer": {
+        "app/[id]/page": "rsc"
       }
     }
   },
   "edge": {},
-  "encryptionKey": "TPW0lqIGkf0QW3F4TH4PNcG+42Ju93n7xdRWJVKXfhk="
+  "encryptionKey": "Uk7gmBykOQQpneoyqsWHykzgzq+J13VR+uDweB/ighQ="
 }
