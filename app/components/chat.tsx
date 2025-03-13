@@ -111,7 +111,7 @@ export const Chat = ({ inputmessages, inputcurrentTicket }: ChatProps) => {
 
       const botMessage = {
         sender: "bot" as const,
-        content: data.response,
+        text: data.response,
         timestamp: new Date().toLocaleTimeString(),
       };
 
@@ -135,12 +135,12 @@ export const Chat = ({ inputmessages, inputcurrentTicket }: ChatProps) => {
 
       const context = messages.map((msg) => ({
         role: msg.sender === "user" ? "user" : "system",
-        content: msg.content,
+        content: msg.text,
       }));
 
       const userMessage = {
         sender: "user" as const,
-        content: trimmedMessage,
+        text: trimmedMessage,
         timestamp: new Date().toLocaleTimeString(),
       };
 
@@ -172,7 +172,7 @@ export const Chat = ({ inputmessages, inputcurrentTicket }: ChatProps) => {
         try {
           const botErrorMessage = {
             sender: "bot" as const,
-            content: errorMessage,
+            text: errorMessage,
             timestamp: new Date().toLocaleTimeString(),
           };
           await addMessageToTicket(currentTicket?.id, botErrorMessage);
@@ -277,7 +277,7 @@ export const Chat = ({ inputmessages, inputcurrentTicket }: ChatProps) => {
                       : "bg-gray-100 text-gray-900"
                   }`}
                 >
-                  {msg.content}
+                  {msg.text}
                 </div>
                 <span className="text-[10px] sm:text-xs text-gray-500 mt-1 mx-2">
                   {msg.timestamp}

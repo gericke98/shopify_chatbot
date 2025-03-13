@@ -65,7 +65,7 @@ const messageSchema = z.object({
   sender: z.enum(["user", "bot", "admin"], {
     message: "Sender must be 'user', 'bot', or 'admin'",
   }),
-  content: z.string().min(1, "Message content cannot be empty"),
+  text: z.string().min(1, "Message content cannot be empty"),
   timestamp: z.string().optional(),
 });
 
@@ -169,33 +169,58 @@ export async function createTicket(userMessage: Message) {
 
     // Create ticket without using transaction
     const ticketId = crypto.randomUUID();
+    console.log(`[DEBUG] Generated ticket ID: ${ticketId}`);
 
-    const newTicket = await db
-      .insert(tickets)
-      .values({
-        id: ticketId,
-        orderNumber: null,
-        email: null,
-        status: "open",
-        createdAt: formatDate(new Date().toISOString()),
-        updatedAt: formatDate(new Date().toISOString()),
-        admin: false,
-      })
-      .returning();
+    try {
+      const newTicket = await db
+        .insert(tickets)
+        .values({
+          id: ticketId,
+          orderNumber: null,
+          email: null,
+          status: "open",
+          createdAt: formatDate(new Date().toISOString()),
+          updatedAt: formatDate(new Date().toISOString()),
+          admin: false,
+        })
+        .returning();
 
-    // Add the first message
-    await db.insert(messages).values({
-      sender: validatedMessage.sender,
-      content: validatedMessage.content,
-      timestamp: formatDate(new Date().toISOString()),
-      ticketId: ticketId,
-    });
+      console.log(
+        `[DEBUG] Ticket inserted successfully: ${JSON.stringify(newTicket)}`
+      );
 
-    console.log(`[SUCCESS] Created ticket with ID: ${ticketId}`);
-    return {
-      status: 200,
-      data: newTicket[0],
-    };
+      // Add the first message
+      try {
+        await db.insert(messages).values({
+          sender: validatedMessage.sender,
+          text: validatedMessage.text,
+          timestamp: formatDate(new Date().toISOString()),
+          ticketId: ticketId,
+        });
+
+        console.log(
+          `[DEBUG] Message inserted successfully for ticket: ${ticketId}`
+        );
+      } catch (messageError) {
+        console.error(`[ERROR] Failed to insert message: ${messageError}`);
+        return {
+          status: 500,
+          error: `Failed to insert message: ${messageError instanceof Error ? messageError.message : String(messageError)}`,
+        };
+      }
+
+      console.log(`[SUCCESS] Created ticket with ID: ${ticketId}`);
+      return {
+        status: 200,
+        data: newTicket[0],
+      };
+    } catch (ticketError) {
+      console.error(`[ERROR] Failed to insert ticket: ${ticketError}`);
+      return {
+        status: 500,
+        error: `Failed to insert ticket: ${ticketError instanceof Error ? ticketError.message : String(ticketError)}`,
+      };
+    }
   } catch (error) {
     if (error instanceof z.ZodError) {
       console.error("[VALIDATION ERROR] Invalid message data:", error.errors);
@@ -205,7 +230,10 @@ export async function createTicket(userMessage: Message) {
       };
     }
     console.error("[ERROR] Failed to create ticket:", error);
-    return { status: 500, error: "Failed to create ticket" };
+    return {
+      status: 500,
+      error: `Failed to create ticket: ${error instanceof Error ? error.message : String(error)}`,
+    };
   }
 }
 
@@ -369,7 +397,7 @@ export async function addMessageToTicket(
 
     await db.insert(messages).values({
       sender: validatedMessage.sender,
-      content: validatedMessage.content,
+      text: validatedMessage.text,
       timestamp: formatDate(new Date().toISOString()),
       ticketId: validatedId,
     });

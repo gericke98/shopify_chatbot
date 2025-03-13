@@ -136,7 +136,7 @@ export type Ticket = {
 export type Message = {
   id?: number;
   sender: string;
-  content: string;
+  text: string;
   timestamp: string;
   ticketId?: string | null;
 };

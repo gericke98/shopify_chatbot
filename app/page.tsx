@@ -12,8 +12,7 @@ export default async function Home(): Promise<JSX.Element> {
     // Create a new ticket with welcome message
     const ticket = await createTicket({
       sender: "bot",
-      content:
-        "👋 Hi! I'm Santi from Shameless Collective. What can I help you with?",
+      text: "👋 Hi! I'm Santi from Shameless Collective. What can I help you with?",
       timestamp: new Date().toISOString(), // Use ISO string for consistency
     });
     ticketInfo = ticket;

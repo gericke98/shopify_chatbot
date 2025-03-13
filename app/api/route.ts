@@ -81,7 +81,7 @@ export async function POST(req: Request): Promise<Response> {
         ))
     ) {
       return NextResponse.json(
-        { error: "Context must be an array of {role, text} objects" },
+        { error: "Context must be an array of {role, content} objects" },
         { status: 400 }
       );
     }

@@ -20,7 +20,7 @@ export const ticketsRelations = relations(tickets, ({ many }) => ({
 export const messages = pgTable("messages", {
   id: serial("id").primaryKey().notNull(),
   sender: text("sender").notNull(),
-  content: text("content").notNull(),
+  text: text("text").notNull(),
   timestamp: text("timestamp").notNull(),
   ticketId: text("ticket_id").references(() => tickets.id, {
     onDelete: "cascade",
