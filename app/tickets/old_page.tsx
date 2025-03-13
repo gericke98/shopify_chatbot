@@ -73,9 +73,9 @@ export default function TicketsPage(): JSX.Element {
     if (ticketMessages.length > 0) {
       const lastMessage = ticketMessages[ticketMessages.length - 1];
       // Return a preview of the last message (first 30 characters)
-      return lastMessage.content.length > 30
-        ? `${lastMessage.content.substring(0, 30)}...`
-        : lastMessage.content;
+      return lastMessage.text.length > 30
+        ? `${lastMessage.text.substring(0, 30)}...`
+        : lastMessage.text;
     }
     return "View conversation";
   };
@@ -86,7 +86,7 @@ export default function TicketsPage(): JSX.Element {
 
     const newMessage = {
       sender: "bot",
-      content: inputMessage.trim(),
+      text: inputMessage.trim(),
       timestamp: new Date().toLocaleTimeString(),
     };
 
@@ -97,7 +97,7 @@ export default function TicketsPage(): JSX.Element {
     const dbMessage = {
       id: Date.now(), // Temporary ID
       sender: "bot",
-      content: inputMessage.trim(),
+      text: inputMessage.trim(),
       timestamp: new Date().toISOString(),
       ticketId: selectedTicket.id,
     };
@@ -479,7 +479,7 @@ export default function TicketsPage(): JSX.Element {
                         </div>
                       )}
                       <div className="text-sm break-words leading-relaxed">
-                        {message.content}
+                        {message.text}
                       </div>
                       <div
                         className={`text-xs mt-1 flex items-center ${
