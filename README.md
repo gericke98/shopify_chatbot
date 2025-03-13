@@ -1,22 +1,70 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AI Customer Support Chat
 
-## Getting Started
+A real-time customer support chat application with AI-powered responses, built with Next.js 14, React, TypeScript, and PostgreSQL.
 
-First, run the development server:
+## Database Setup
+
+This application uses PostgreSQL with Drizzle ORM. Follow these steps to set up the database:
+
+### Local Development
+
+1. Create a `.env` file in the root directory with your database connection string:
+
+   ```
+   DATABASE_URL=postgres://username:password@localhost:5432/database_name
+   ```
+
+2. Run the migrations to create the database schema:
+   ```bash
+   npm run migrate
+   ```
+
+### Production Deployment
+
+When deploying to Vercel, make sure to:
+
+1. Add the `DATABASE_URL` environment variable in your Vercel project settings.
+2. The postbuild script will automatically run migrations during deployment.
+
+If you encounter database errors after deployment, you can manually run migrations:
+
+1. Install the Vercel CLI:
+
+   ```bash
+   npm install -g vercel
+   ```
+
+2. Pull environment variables:
+
+   ```bash
+   vercel env pull
+   ```
+
+3. Run migrations:
+   ```bash
+   npm run migrate
+   ```
+
+## Development
 
 ```bash
+# Install dependencies
+npm install
+
+# Run the development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Features
+
+- Real-time customer support chat
+- AI-powered responses
+- Order tracking and management
+- Delivery address changes
+- Returns and exchanges
+- Admin takeover for complex issues
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 

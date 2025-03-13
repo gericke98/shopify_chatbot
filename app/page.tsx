@@ -7,6 +7,7 @@ export default async function Home(): Promise<JSX.Element> {
 
   let ticketData = null;
   let ticketInfo = null;
+  let error = null;
 
   try {
     // Create a new ticket with welcome message
@@ -22,10 +23,12 @@ export default async function Home(): Promise<JSX.Element> {
     if (ticket.status === 200 && "data" in ticket && ticket.data?.id) {
       ticketData = ticket.data;
     } else {
+      error = ticket.error || "Failed to create ticket";
       console.error("Failed to create ticket:", ticket);
     }
-  } catch (error) {
-    console.error("Error creating ticket:", error);
+  } catch (err) {
+    error = err instanceof Error ? err.message : String(err);
+    console.error("Error creating ticket:", err);
   }
 
   // Redirect outside of try-catch if ticket was created successfully
@@ -39,10 +42,29 @@ export default async function Home(): Promise<JSX.Element> {
     <div className="flex items-center justify-center min-h-screen bg-gray-50">
       <div className="text-center p-8">
         <h1 className="text-xl font-semibold text-gray-800 mb-2">
-          Creating your support session... ${ticketData?.id}
-          {JSON.stringify(ticketInfo)}
+          {error
+            ? "Error creating support session"
+            : "Creating your support session..."}
         </h1>
-        <p className="text-gray-600">Please wait while we set up your chat.</p>
+        {error ? (
+          <div>
+            <p className="text-red-600 mb-4">{error}</p>
+            <p className="text-gray-600">
+              Please try again later or contact support.
+            </p>
+            <p className="text-gray-500 mt-4 text-xs">
+              Note: If this is the first deployment, you may need to run
+              database migrations.
+            </p>
+          </div>
+        ) : (
+          <p className="text-gray-600">
+            Please wait while we set up your chat.
+          </p>
+        )}
+        <div className="mt-4 text-xs text-gray-400">
+          Debug info: {JSON.stringify(ticketInfo)}
+        </div>
       </div>
     </div>
   );
