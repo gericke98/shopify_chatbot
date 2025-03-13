@@ -13,7 +13,7 @@ export default async function Home(): Promise<JSX.Element> {
   });
 
   // Redirect to the ticket page if created successfully
-  if (ticket.status === 200 && ticket.data) {
+  if (ticket.status === 200 && "data" in ticket && ticket.data) {
     redirect(`/${ticket.data.id}`);
   }
 

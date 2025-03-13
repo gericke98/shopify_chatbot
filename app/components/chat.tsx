@@ -81,6 +81,52 @@ export const Chat = ({ inputmessages, inputcurrentTicket }: ChatProps) => {
     []
   );
 
+  const sendMessageToAI = async (
+    message: string,
+    context: { role: string; content: string }[],
+    language: "English" | "Spanish",
+    ticket?: Ticket
+  ): Promise<void> => {
+    try {
+      const res = await fetch("/api", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message,
+          context,
+          language,
+          currentTicket: ticket,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`API request failed with status ${res.status}`);
+      }
+
+      const data = await res.json();
+
+      if (data.updatedTicket) {
+        setCurrentTicket(data.updatedTicket.data);
+      }
+
+      const botMessage = {
+        sender: "bot" as const,
+        content: data.response,
+        timestamp: new Date().toLocaleTimeString(),
+      };
+
+      await addMessageToTicket(currentTicket?.id, botMessage);
+    } catch (error) {
+      // Implement retry logic
+      if (retryCount < MAX_RETRIES) {
+        setRetryCount((prev) => prev + 1);
+        await new Promise((resolve) => setTimeout(resolve, 1000 * retryCount));
+        return sendMessageToAI(message, context, language, ticket);
+      }
+      throw error; // Re-throw if max retries exceeded
+    }
+  };
+
   const handleSubmit = useCallback(
     async (e: FormEvent<HTMLFormElement>): Promise<void> => {
       e.preventDefault();
@@ -137,54 +183,15 @@ export const Chat = ({ inputmessages, inputcurrentTicket }: ChatProps) => {
         setIsLoading(false);
       }
     },
-    [messages, inputMessage, currentTicket, language, errorMessageByLanguage]
+    [
+      messages,
+      inputMessage,
+      currentTicket,
+      language,
+      errorMessageByLanguage,
+      sendMessageToAI,
+    ]
   );
-
-  const sendMessageToAI = async (
-    message: string,
-    context: { role: string; content: string }[],
-    language: "English" | "Spanish",
-    ticket?: Ticket
-  ): Promise<void> => {
-    try {
-      const res = await fetch("/api", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message,
-          context,
-          language,
-          currentTicket: ticket,
-        }),
-      });
-
-      if (!res.ok) {
-        throw new Error(`API request failed with status ${res.status}`);
-      }
-
-      const data = await res.json();
-
-      if (data.updatedTicket) {
-        setCurrentTicket(data.updatedTicket.data);
-      }
-
-      const botMessage = {
-        sender: "bot" as const,
-        content: data.response,
-        timestamp: new Date().toLocaleTimeString(),
-      };
-
-      await addMessageToTicket(currentTicket?.id, botMessage);
-    } catch (error) {
-      // Implement retry logic
-      if (retryCount < MAX_RETRIES) {
-        setRetryCount((prev) => prev + 1);
-        await new Promise((resolve) => setTimeout(resolve, 1000 * retryCount));
-        return sendMessageToAI(message, context, language, ticket);
-      }
-      throw error; // Re-throw if max retries exceeded
-    }
-  };
 
   const placeholderText = useMemo(
     () =>

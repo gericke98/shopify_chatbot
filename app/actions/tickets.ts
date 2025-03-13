@@ -167,34 +167,35 @@ export async function createTicket(userMessage: Message) {
       };
     }
 
-    // Use transaction to ensure both operations succeed or fail together
-    return await db.transaction(async (tx) => {
-      const newTicket = await tx
-        .insert(tickets)
-        .values({
-          id: crypto.randomUUID(),
-          orderNumber: null,
-          email: null,
-          status: "open",
-          createdAt: formatDate(new Date().toISOString()),
-          updatedAt: formatDate(new Date().toISOString()),
-          admin: false,
-        })
-        .returning();
+    // Create ticket without using transaction
+    const ticketId = crypto.randomUUID();
 
-      await tx.insert(messages).values({
-        sender: validatedMessage.sender,
-        content: validatedMessage.content,
-        timestamp: formatDate(new Date().toISOString()),
-        ticketId: newTicket[0].id,
-      });
+    const newTicket = await db
+      .insert(tickets)
+      .values({
+        id: ticketId,
+        orderNumber: null,
+        email: null,
+        status: "open",
+        createdAt: formatDate(new Date().toISOString()),
+        updatedAt: formatDate(new Date().toISOString()),
+        admin: false,
+      })
+      .returning();
 
-      console.log(`[SUCCESS] Created ticket with ID: ${newTicket[0].id}`);
-      return {
-        status: 200,
-        data: newTicket[0],
-      };
+    // Add the first message
+    await db.insert(messages).values({
+      sender: validatedMessage.sender,
+      content: validatedMessage.content,
+      timestamp: formatDate(new Date().toISOString()),
+      ticketId: ticketId,
     });
+
+    console.log(`[SUCCESS] Created ticket with ID: ${ticketId}`);
+    return {
+      status: 200,
+      data: newTicket[0],
+    };
   } catch (error) {
     if (error instanceof z.ZodError) {
       console.error("[VALIDATION ERROR] Invalid message data:", error.errors);
