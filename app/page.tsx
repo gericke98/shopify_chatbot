@@ -12,8 +12,9 @@ export default async function Home(): Promise<JSX.Element> {
     timestamp: new Date().toISOString(), // Use ISO string for consistency
   });
 
+  console.log("Ticket:", ticket);
   // Redirect to the ticket page if created successfully
-  if (ticket.status === 200 && "data" in ticket && ticket.data) {
+  if (ticket.status === 200 && "data" in ticket && ticket.data?.id) {
     redirect(`/${ticket.data.id}`);
   }
 
