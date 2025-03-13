@@ -170,6 +170,17 @@ export async function createTicket(userMessage: Message) {
     // Create ticket without using transaction
     const ticketId = crypto.randomUUID();
     console.log(`[DEBUG] Generated ticket ID: ${ticketId}`);
+    console.log(
+      `[DEBUG] Values to insert: ${{
+        id: ticketId,
+        orderNumber: null,
+        email: null,
+        status: "open",
+        createdAt: formatDate(new Date().toISOString()),
+        updatedAt: formatDate(new Date().toISOString()),
+        admin: false,
+      }}`
+    );
 
     try {
       const newTicket = await db
