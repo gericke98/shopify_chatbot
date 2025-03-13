@@ -6,6 +6,7 @@ export default async function Home(): Promise<JSX.Element> {
   console.log("Home page loaded");
 
   let ticketData = null;
+  let ticketInfo = null;
 
   try {
     // Create a new ticket with welcome message
@@ -15,7 +16,7 @@ export default async function Home(): Promise<JSX.Element> {
         "👋 Hi! I'm Santi from Shameless Collective. What can I help you with?",
       timestamp: new Date().toISOString(), // Use ISO string for consistency
     });
-
+    ticketInfo = ticket;
     console.log("Ticket created:", JSON.stringify(ticket));
 
     // Store ticket data for redirection outside try-catch
@@ -39,7 +40,8 @@ export default async function Home(): Promise<JSX.Element> {
     <div className="flex items-center justify-center min-h-screen bg-gray-50">
       <div className="text-center p-8">
         <h1 className="text-xl font-semibold text-gray-800 mb-2">
-          Creating your support session...
+          Creating your support session... ${ticketData?.id}
+          {JSON.stringify(ticketInfo)}
         </h1>
         <p className="text-gray-600">Please wait while we set up your chat.</p>
       </div>
