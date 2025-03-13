@@ -4,21 +4,37 @@ import { createTicket } from "./actions/tickets";
 
 export default async function Home(): Promise<JSX.Element> {
   console.log("Home page loaded");
-  // Create a new ticket with welcome message
-  const ticket = await createTicket({
-    sender: "bot",
-    content:
-      "👋 Hi! I'm Santi from Shameless Collective. What can I help you with?",
-    timestamp: new Date().toISOString(), // Use ISO string for consistency
-  });
 
-  console.log("Ticket:", ticket);
-  // Redirect to the ticket page if created successfully
-  if (ticket.status === 200 && "data" in ticket && ticket.data?.id) {
-    redirect(`/${ticket.data.id}`);
+  let ticketData = null;
+
+  try {
+    // Create a new ticket with welcome message
+    const ticket = await createTicket({
+      sender: "bot",
+      content:
+        "👋 Hi! I'm Santi from Shameless Collective. What can I help you with?",
+      timestamp: new Date().toISOString(), // Use ISO string for consistency
+    });
+
+    console.log("Ticket created:", JSON.stringify(ticket));
+
+    // Store ticket data for redirection outside try-catch
+    if (ticket.status === 200 && "data" in ticket && ticket.data?.id) {
+      ticketData = ticket.data;
+    } else {
+      console.error("Failed to create ticket:", ticket);
+    }
+  } catch (error) {
+    console.error("Error creating ticket:", error);
   }
 
-  // Fallback UI in case of error
+  // Redirect outside of try-catch if ticket was created successfully
+  if (ticketData?.id) {
+    console.log("Redirecting to ticket:", ticketData.id);
+    redirect(`/${ticketData.id}`);
+  }
+
+  // Fallback UI in case of error or if redirect doesn't work
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50">
       <div className="text-center p-8">
