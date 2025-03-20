@@ -29,6 +29,8 @@ export type ClassifiedMessage = {
     product_name: string;
     size_query: string;
     update_type: string;
+    height: string;
+    fit: string;
   };
   language: string;
 };

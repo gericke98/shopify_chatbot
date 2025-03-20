@@ -45,6 +45,28 @@ export const Chat = ({ inputmessages, inputcurrentTicket }: ChatProps) => {
     }
   }, [inputmessages, inputcurrentTicket]);
 
+  // Load messages from local storage on initial render
+  useEffect(() => {
+    const storedMessages = localStorage.getItem(
+      `chat-messages-${inputcurrentTicket?.id}`
+    );
+    if (storedMessages) {
+      setMessages(JSON.parse(storedMessages));
+    } else {
+      setMessages(inputmessages);
+    }
+  }, [inputcurrentTicket?.id, inputmessages]);
+
+  // Save messages to local storage whenever they change
+  useEffect(() => {
+    if (inputcurrentTicket?.id && messages.length > 0) {
+      localStorage.setItem(
+        `chat-messages-${inputcurrentTicket.id}`,
+        JSON.stringify(messages)
+      );
+    }
+  }, [messages, inputcurrentTicket?.id]);
+
   // Scroll to bottom when messages change
   useEffect(() => {
     const scrollToBottom = () => {
@@ -115,6 +137,10 @@ export const Chat = ({ inputmessages, inputcurrentTicket }: ChatProps) => {
         timestamp: new Date().toLocaleTimeString(),
       };
 
+      // Add bot message to UI immediately
+      setMessages((prev) => [...prev, botMessage]);
+
+      // Then send to server
       await addMessageToTicket(currentTicket?.id, botMessage);
     } catch (error) {
       // Implement retry logic
@@ -133,11 +159,6 @@ export const Chat = ({ inputmessages, inputcurrentTicket }: ChatProps) => {
       const trimmedMessage = inputMessage.trim();
       if (!trimmedMessage) return;
 
-      const context = messages.map((msg) => ({
-        role: msg.sender === "user" ? "user" : "system",
-        content: msg.text,
-      }));
-
       const userMessage = {
         sender: "user" as const,
         text: trimmedMessage,
@@ -149,10 +170,19 @@ export const Chat = ({ inputmessages, inputcurrentTicket }: ChatProps) => {
       setRetryCount(0);
 
       try {
+        // Add user message to UI immediately
+        setMessages((prev) => [...prev, userMessage]);
+
+        // Send message to server
         await addMessageToTicket(currentTicket?.id, userMessage);
 
-        // Only call AI if no admin has taken over
         if (!currentTicket?.admin) {
+          const context = messages.map((msg) => ({
+            role: msg.sender === "user" ? "user" : "system",
+            content: msg.text,
+          }));
+
+          // Only call AI if no admin has taken over
           await sendMessageToAI(
             trimmedMessage,
             context,
@@ -169,28 +199,13 @@ export const Chat = ({ inputmessages, inputcurrentTicket }: ChatProps) => {
           position: "top-center",
         });
 
-        try {
-          const botErrorMessage = {
-            sender: "bot" as const,
-            text: errorMessage,
-            timestamp: new Date().toLocaleTimeString(),
-          };
-          await addMessageToTicket(currentTicket?.id, botErrorMessage);
-        } catch (addMsgError) {
-          console.error("Error adding message:", addMsgError);
-        }
+        // Remove the optimistically added message on error
+        setMessages((prev) => prev.filter((msg) => msg !== userMessage));
       } finally {
         setIsLoading(false);
       }
     },
-    [
-      messages,
-      inputMessage,
-      currentTicket,
-      language,
-      errorMessageByLanguage,
-      sendMessageToAI,
-    ]
+    [messages, inputMessage, currentTicket, language, errorMessageByLanguage]
   );
 
   const placeholderText = useMemo(
@@ -234,34 +249,47 @@ export const Chat = ({ inputmessages, inputcurrentTicket }: ChatProps) => {
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
       <Toaster />
       <div className="max-w-4xl mx-auto min-h-screen p-4 sm:p-6">
-        {/* Header */}
-        <header className="mb-4 sm:mb-6">
+        {/* Enhanced Header */}
+        <header className="mb-4 sm:mb-6 bg-white rounded-xl p-4 shadow-sm border border-gray-100">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-0 mb-4">
-            <div className="h-10 w-40 sm:h-12 sm:w-48 relative">
-              <Image
-                src="/logo.png"
-                alt="Shameless Collective Logo"
-                fill
-                className="object-contain"
-                priority
-              />
+            <div className="flex items-center gap-4">
+              <div className="h-10 w-40 sm:h-12 sm:w-48 relative">
+                <Image
+                  src="/logo.png"
+                  alt="Shameless Collective Logo"
+                  fill
+                  className="object-contain"
+                  priority
+                />
+              </div>
+              <div className="h-6 w-px bg-gray-200 hidden sm:block" />
+              <p className="text-base sm:text-lg text-gray-700 font-medium hidden sm:block">
+                {headerText}
+              </p>
             </div>
+
+            {/* Enhanced Language Selector */}
             <select
               value={language}
               onChange={handleLanguageChange}
-              className="w-full sm:w-auto px-3 sm:px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full sm:w-auto px-4 py-2 rounded-lg border border-gray-200 bg-white text-gray-700 
+                focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer hover:border-gray-300 
+                transition-colors duration-200"
             >
-              <option value="English">English</option>
-              <option value="Spanish">Español</option>
+              <option value="English">🇬🇧 English</option>
+              <option value="Spanish">🇪🇸 Español</option>
             </select>
           </div>
-          <p className="text-base sm:text-lg text-gray-700 font-medium text-center sm:text-left">
+          <p className="text-base sm:text-lg text-gray-700 font-medium text-center sm:hidden">
             {headerText}
           </p>
         </header>
 
-        {/* Chat Window */}
-        <div className="h-[calc(100vh-280px)] sm:h-[calc(100vh-300px)] border border-gray-200 rounded-xl p-4 sm:p-6 overflow-y-auto bg-white shadow-lg">
+        {/* Enhanced Chat Window */}
+        <div
+          className="h-[calc(100vh-280px)] sm:h-[calc(100vh-300px)] border border-gray-200 rounded-xl 
+          p-4 sm:p-6 overflow-y-auto bg-white shadow-lg backdrop-blur-sm"
+        >
           {messages.map((msg, idx) => (
             <div
               key={idx}
@@ -269,38 +297,70 @@ export const Chat = ({ inputmessages, inputcurrentTicket }: ChatProps) => {
                 msg.sender === "user" ? "justify-end" : "justify-start"
               }`}
             >
+              {/* Bot Avatar for non-user messages */}
+              {msg.sender !== "user" && (
+                <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center mr-2 flex-shrink-0 border border-gray-100">
+                  <Image
+                    src="/logo.png"
+                    alt="Shameless Collective"
+                    width={24}
+                    height={24}
+                    className="object-contain"
+                  />
+                </div>
+              )}
+
               <div className="flex flex-col max-w-[90%] sm:max-w-[80%]">
                 <div
-                  className={`px-4 sm:px-6 py-3 sm:py-4 rounded-2xl shadow-sm ${
-                    msg.sender === "user"
-                      ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white"
-                      : "bg-gray-100 text-gray-900"
-                  }`}
+                  className={`px-4 sm:px-6 py-3 sm:py-4 rounded-2xl shadow-sm 
+                    ${
+                      msg.sender === "user"
+                        ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white"
+                        : "bg-gray-50 text-gray-900 border border-gray-100"
+                    } transition-all duration-200 hover:shadow-md`}
                 >
                   {msg.text}
                 </div>
-                <span className="text-[10px] sm:text-xs text-gray-500 mt-1 mx-2">
+                <span
+                  className={`text-[10px] sm:text-xs text-gray-500 mt-1 mx-2
+                  ${msg.sender === "user" ? "text-right" : "text-left"}`}
+                >
                   {msg.timestamp}
                 </span>
               </div>
+
+              {/* User Avatar for user messages */}
+              {msg.sender === "user" && (
+                <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center ml-2 flex-shrink-0">
+                  <span className="text-white text-sm">👤</span>
+                </div>
+              )}
             </div>
           ))}
 
+          {/* Enhanced Loading Indicator */}
           {isLoading && (
-            <div className="flex mb-4 sm:mb-6 justify-start">
-              <div className="flex flex-col max-w-[90%] sm:max-w-[80%]">
-                <div className="px-4 sm:px-6 py-3 sm:py-4 rounded-2xl shadow-sm bg-gray-100">
-                  <div className="flex space-x-2">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                    <div
-                      className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                      style={{ animationDelay: "0.2s" }}
-                    ></div>
-                    <div
-                      className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                      style={{ animationDelay: "0.4s" }}
-                    ></div>
-                  </div>
+            <div className="flex mb-4 sm:mb-6 justify-start items-center">
+              <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center mr-2 flex-shrink-0 border border-gray-100">
+                <Image
+                  src="/logo.png"
+                  alt="Shameless Collective"
+                  width={24}
+                  height={24}
+                  className="object-contain"
+                />
+              </div>
+              <div className="bg-gray-50 px-4 py-3 rounded-2xl shadow-sm border border-gray-100">
+                <div className="flex space-x-2">
+                  <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div>
+                  <div
+                    className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"
+                    style={{ animationDelay: "0.2s" }}
+                  ></div>
+                  <div
+                    className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"
+                    style={{ animationDelay: "0.4s" }}
+                  ></div>
                 </div>
               </div>
             </div>
@@ -308,23 +368,32 @@ export const Chat = ({ inputmessages, inputcurrentTicket }: ChatProps) => {
           <div ref={chatEndRef} />
         </div>
 
-        {/* Chat Input */}
+        {/* Enhanced Chat Input */}
         <form onSubmit={handleSubmit} className="mt-4 sm:mt-6">
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 bg-white p-3 rounded-xl shadow-sm border border-gray-100">
             <input
               type="text"
               placeholder={placeholderText}
               value={inputMessage}
               onChange={handleInputChange}
-              className="flex-1 text-black border border-gray-300 rounded-xl px-4 sm:px-6 py-3 sm:py-4 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+              className="flex-1 text-black border border-gray-200 rounded-xl px-4 sm:px-6 py-3 sm:py-4 
+                focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                placeholder:text-gray-400 transition-all duration-200"
               required
             />
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl hover:opacity-90 transition-all disabled:from-gray-400 disabled:to-gray-500 shadow-sm"
+              className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-blue-600 text-white 
+                px-6 sm:px-8 py-3 sm:py-4 rounded-xl hover:opacity-90 transition-all duration-200
+                disabled:from-gray-400 disabled:to-gray-500 shadow-sm hover:shadow-md
+                flex items-center justify-center gap-2"
             >
               {buttonText}
+              {!isLoading && <span>→</span>}
+              {isLoading && (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              )}
             </button>
           </div>
         </form>

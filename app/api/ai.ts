@@ -27,6 +27,12 @@ export class AIService {
   - For queries that don't match other intents and are not related to any order, classify as "other-general"
   - If user wants to update or modify their order, classify it as "update_order" and extract what they want to update (shipping_address or product) if mentioned
   
+  For product sizing queries:
+  - Extract height in cm if provided
+  - Extract fit preference (tight, regular, loose)
+  - Set size_query to "true" if asking about sizing
+  - Extract product name or type if mentioned
+  
   Output ONLY a JSON object with the following structure:
   {
     "intent": one of ["order_tracking", "returns_exchange", "change_delivery", "return_status", "promo_code", "other-order", "other-general", "delivery_issue", "conversation_end", "product_sizing", "update_order"],
@@ -41,45 +47,54 @@ export class AIService {
       "return_type": "return or exchange or empty string",
       "returns_website_sent": "true if returns website URL was already sent, false otherwise",
       "product_name": "name of product being asked about or empty string",
-      "size_query": "specific size question or empty string",
-      "update_type": "shipping_address or product or empty string if not specified"
+      "size_query": "true if asking about sizing, empty string otherwise",
+      "update_type": "shipping_address or product or empty string if not specified",
+      "height": "height in cm or empty string",
+      "fit": "tight, regular, loose, or empty string"
     },
     "language": "English" or "Spanish" (detect the language of the message)
   }`,
 
-    FINAL_ANSWER: `You are a friendly 30-year-old customer service rep named Santi. Your role is to assist customers with their inquiries about orders, products, returns, and other ecommerce related questions.
+    FINAL_ANSWER: `You are a friendly customer service rep named Santi working for Shameless Collective. Your role is to assist customers with their inquiries about orders, products, returns, and other ecommerce related questions.
   
   Important communication guidelines:
-  - Keep responses extremely brief but professional, using emojis when needed
-  - Use spanish from Spain(for Spanish responses)
+  - Keep responses extremely brief but professional
+  - Use spanish from Spain (for Spanish responses)
   - For follow-up messages (context array has items), do not include any introduction
-  - When asking for order number and email, provide example format in a casual way
-  - For order tracking responses:
-    * Check shopifyData.fulfillments array
-    * If empty array, order is still being prepared
-    * If array has items, tracking info is available in the fulfillments
-  - For delivery issues, provide helpful suggestions in a friendly, empathetic way
-  - For address changes, check order status in shopifyData
-  - For returns/exchanges, explain the process casually and provide the returns portal link: https://shameless-returns-web.vercel.app
-  - For promo code inquiries, explain newsletter benefits in a fun way
-  - For product sizing inquiries:
-    * Emphasize that garments are oversized/oversize fit
-    * Recommend ordering usual size or one size down
-    * Check product description for specific sizing details
-    * Provide measurements if available in product data
-  - If the intent is "conversation_end", respond with a friendly closing message like "Thank you for trusting Shameless Collective!" in English or "¡Gracias por confiar en Shameless Collective!" in Spanish`,
-
-    ADDRESS_CONFIRMATION: `You are a friendly 23-year-old customer service rep named Santi helping with address collection.
   
-  Important guidelines:
-  - Keep responses super casual and friendly
-  - Use emojis and informal language
-  - Consider previous conversation context
-  - For Spanish responses, use Spain-specific expressions and vosotros form
-  - For address confirmations, present the address casually and ask for confirmation
-  - For multiple addresses, number them and ask user to pick one
-  - When asking for a new address, remind them to include zip code, city and complete street address
-  - If no address is provided, ask for it in a friendly way`,
+  For product sizing inquiries:
+  * Use ONLY the provided size chart data for measurements
+  * Consider:
+    - User's height (in parameters)
+    - Fit preference (in parameters)
+    - Product measurements from size chart
+  * Format response as:
+    Spanish:
+    "Te recomiendo una talla [SIZE] para el [Product Name] con una altura de [HEIGHT]cm y un ajuste [FIT]"
+
+    English:
+    "I recommend size [SIZE] for the [Product Name] with a height of [HEIGHT]cm and a fit of [FIT]"
+  
+  Size recommendation guidelines:
+  * For height < 165cm: Consider smaller sizes
+  * For height 165-175cm: Consider medium sizes
+  * For height > 175cm: Consider larger sizes
+  * Adjust based on fit preference:
+    - Tight: Go one size down
+    - Regular: Use recommended size
+    - Loose: Go one size up`,
+
+    ADDRESS_CONFIRMATION: `You are a customer service rep helping with address validation.
+  
+  IMPORTANT: You MUST return EXACTLY the template provided, with NO additional text.
+
+  Rules:
+  1. Use the exact template provided
+  2. DO NOT add any other text
+  3. DO NOT ask for additional information
+  4. DO NOT mention postal codes
+  5. Keep EXACTLY the same formatting (newlines, emoji)
+  6. ALWAYS respond in the same language as the template`,
   };
 
   private readonly RETURNS_PORTAL_URL =
@@ -175,6 +190,8 @@ export class AIService {
         product_name: "",
         size_query: "",
         update_type: "",
+        height: "",
+        fit: "",
       },
       language: "English",
     };
@@ -324,7 +341,8 @@ export class AIService {
     shopifyData: ShopifyData | null | ShopifyDataTracking,
     userMessage: string,
     context?: OpenAIMessage[],
-    language?: string
+    language?: string,
+    sizeCharts?: string
   ): Promise<string> {
     // Validate inputs
     if (!intent || typeof intent !== "string") {
@@ -360,6 +378,7 @@ export class AIService {
   
   Based on the classified intent "${intent}" and the following data:
   ${JSON.stringify(parameters, null, 2)}
+  ${sizeCharts ? `\nSize Chart Data:\n${sizeCharts}` : ""}
   
   Additional Context:
   ${sanitizedUserMessage}
@@ -424,6 +443,7 @@ export class AIService {
     language?: string
   ): Promise<string> {
     const { new_delivery_info } = parameters;
+    console.log("Entro en confirmDeliveryAddress", new_delivery_info);
 
     if (!new_delivery_info) {
       return language === "Spanish"
@@ -447,30 +467,35 @@ export class AIService {
     }));
 
     const systemPrompt = `${this.SYSTEM_PROMPTS.ADDRESS_CONFIRMATION}
-  
-  Previous conversation context:
-  ${
-    sanitizedContext?.length
-      ? sanitizedContext.map((msg) => `${msg.role}: ${msg.content}`).join("\n")
-      : "No previous context"
-  }
-  
-  Include in the response the following:
-  ${
-    addressValidation.multipleCandidates
-      ? language === "Spanish"
-        ? `He encontrado varias direcciones posibles. Por favor, elige el número de la dirección correcta o proporciona una nueva:\n\n${addressValidation.addressCandidates
-            .map((addr: string, i: number) => `${i + 1}. ${addr}`)
-            .join("\n")}`
-        : `I found multiple possible addresses. Please choose the number of the correct address or provide a new one:\n\n${addressValidation.addressCandidates
-            .map((addr: string, i: number) => `${i + 1}. ${addr}`)
-            .join("\n")}`
-      : language === "Spanish"
-        ? `¿Es esta la dirección correcta?\n\n${addressValidation.formattedAddress}\n\nPor favor, responde "sí" para confirmar o proporciona la dirección correcta si no lo es 😊`
-        : `Is this the right address?\n\n${addressValidation.formattedAddress}\n\nPlease reply "yes" to confirm or provide the correct address if it's not 😊`
-  }
-  
-  IMPORTANT: Respond ONLY in ${language || "English"}`;
+
+Template to use:
+${
+  addressValidation.multipleCandidates
+    ? language === "Spanish"
+      ? `He encontrado varias direcciones posibles. Por favor, elige el número de la dirección correcta o proporciona una nueva:
+
+${addressValidation.addressCandidates
+  .map((addr: string, i: number) => `${i + 1}. ${addr}`)
+  .join("\n")}`
+      : `I found multiple possible addresses. Please choose the number of the correct address or provide a new one:
+
+${addressValidation.addressCandidates
+  .map((addr: string, i: number) => `${i + 1}. ${addr}`)
+  .join("\n")}`
+    : language === "Spanish"
+      ? `¿Es esta la dirección correcta?
+
+${addressValidation.formattedAddress}
+
+Por favor, responde "sí" para confirmar o proporciona la dirección correcta si no lo es 😊`
+      : `Is this the right address?
+
+${addressValidation.formattedAddress}
+
+Please reply "yes" to confirm or provide the correct address if it's not 😊`
+}
+
+IMPORTANT: You MUST respond in ${language || "English"}`;
 
     try {
       const data = await this.callOpenAI(

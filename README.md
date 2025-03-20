@@ -42,7 +42,16 @@ If you encounter database errors after deployment, you can manually run migratio
 
 3. Run migrations:
    ```bash
-   npm run migrate
+   npm run migrate:mjs
+   ```
+
+Alternatively, you can run migrations directly in the Vercel console:
+
+1. Go to your project in the Vercel dashboard
+2. Navigate to Settings > Functions > Console
+3. Run the following command:
+   ```bash
+   node db/migrate.mjs
    ```
 
 ## Development

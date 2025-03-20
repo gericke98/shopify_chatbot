@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import { Message, Ticket, CustomerData } from "@/types";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { cache } from "react";
 
 // Custom error types
 class DatabaseError extends Error {
@@ -15,13 +16,6 @@ class DatabaseError extends Error {
   ) {
     super(message);
     this.name = "DatabaseError";
-  }
-}
-
-class ValidationError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "ValidationError";
   }
 }
 
@@ -88,39 +82,29 @@ export async function getTickets(): Promise<Ticket[]> {
   }
 }
 
-export async function getTicket(ticketId: string): Promise<Ticket | undefined> {
-  try {
-    // Validate input
-    const validatedId = ticketIdSchema.parse(ticketId);
+export const getTicket = cache(
+  async (id: string): Promise<Ticket | undefined> => {
+    try {
+      // Validate input
+      const validatedId = ticketIdSchema.parse(id);
 
-    console.log(`[ACTION] Getting ticket with ID: ${validatedId}`);
-    const ticket = await db.query.tickets.findFirst({
-      where: eq(tickets.id, validatedId),
-    });
+      console.log(`[ACTION] Getting ticket with ID: ${validatedId}`);
+      const ticket = await db.query.tickets.findFirst({
+        where: eq(tickets.id, validatedId),
+      });
 
-    return ticket;
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      console.error(
-        `[VALIDATION ERROR] Invalid ticket ID: ${ticketId}`,
-        error.errors
-      );
-      throw new ValidationError(
-        `Invalid ticket ID: ${error.errors[0].message}`
-      );
+      return ticket;
+    } catch (error) {
+      console.error(`[ERROR] Failed to get ticket ${id}:`, error);
+      return undefined;
     }
-    console.error(`[ERROR] Failed to get ticket ${ticketId}:`, error);
-    throw new DatabaseError(
-      `Failed to retrieve ticket with ID ${ticketId}`,
-      error
-    );
   }
-}
+);
 
-export async function getMessages(ticketId: string): Promise<Message[]> {
+export const getMessages = cache(async (id: string): Promise<Message[]> => {
   try {
     // Validate input
-    const validatedId = ticketIdSchema.parse(ticketId);
+    const validatedId = ticketIdSchema.parse(id);
 
     console.log(`[ACTION] Getting messages for ticket ID: ${validatedId}`);
     const messagesResponse = await db.query.messages.findMany({
@@ -129,25 +113,10 @@ export async function getMessages(ticketId: string): Promise<Message[]> {
 
     return messagesResponse;
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      console.error(
-        `[VALIDATION ERROR] Invalid ticket ID: ${ticketId}`,
-        error.errors
-      );
-      throw new ValidationError(
-        `Invalid ticket ID: ${error.errors[0].message}`
-      );
-    }
-    console.error(
-      `[ERROR] Failed to get messages for ticket ${ticketId}:`,
-      error
-    );
-    throw new DatabaseError(
-      `Failed to retrieve messages for ticket ID ${ticketId}`,
-      error
-    );
+    console.error(`[ERROR] Failed to get messages for ticket ${id}:`, error);
+    return [];
   }
-}
+});
 
 // POST ACTIONS
 export async function createTicket(userMessage: Message) {
@@ -374,46 +343,25 @@ export async function addMessageToTicket(
   ticketId: string | undefined,
   message: Message
 ) {
-  console.log(`[ACTION] Adding message to ticket ${ticketId}`);
+  if (!ticketId) return;
 
   try {
     // Validate inputs
-    if (!ticketId) {
-      throw new ValidationError("Ticket ID is required");
-    }
-
     const validatedId = ticketIdSchema.parse(ticketId);
     const validatedMessage = messageSchema.parse(message);
 
-    // Check rate limit
-    const identifier = `message-${validatedId}`; // In production, use IP or user identifier
-    if (!checkRateLimit(identifier)) {
-      console.warn(
-        `[RATE LIMIT] Add message request rate limited for ticket ${validatedId}`
-      );
-      return {
-        status: 429,
-        error: "Too many requests. Please try again later.",
-      };
-    }
+    // Add the message to the database
+    const newMessage = await db
+      .insert(messages)
+      .values({
+        sender: validatedMessage.sender,
+        text: validatedMessage.text,
+        timestamp: formatDate(new Date().toISOString()),
+        ticketId: validatedId,
+      })
+      .returning();
 
-    // Check if ticket exists
-    const existingTicket = await db.query.tickets.findFirst({
-      where: eq(tickets.id, validatedId),
-    });
-
-    if (!existingTicket) {
-      return { status: 404, error: "Ticket not found" };
-    }
-
-    await db.insert(messages).values({
-      sender: validatedMessage.sender,
-      text: validatedMessage.text,
-      timestamp: formatDate(new Date().toISOString()),
-      ticketId: validatedId,
-    });
-
-    // Update the ticket's updatedAt timestamp
+    // Update ticket's updatedAt timestamp
     await db
       .update(tickets)
       .set({
@@ -421,26 +369,13 @@ export async function addMessageToTicket(
       })
       .where(eq(tickets.id, validatedId));
 
+    // Revalidate both the specific ticket page and the messages
+    revalidatePath(`/${ticketId}`);
     revalidatePath(`/`);
-    console.log(`[SUCCESS] Added message to ticket ${validatedId}`);
 
-    return { status: 200, success: true };
+    return { status: 200, data: newMessage[0] };
   } catch (error) {
-    if (error instanceof ValidationError) {
-      console.error(`[VALIDATION ERROR] ${error.message}`);
-      return { status: 400, error: error.message };
-    }
-    if (error instanceof z.ZodError) {
-      console.error(`[VALIDATION ERROR] Invalid message data:`, error.errors);
-      return {
-        status: 400,
-        error: `Invalid message data: ${error.errors[0].message}`,
-      };
-    }
-    console.error(
-      `[ERROR] Failed to add message to ticket ${ticketId}:`,
-      error
-    );
-    return { status: 500, error: "Failed to add message to ticket" };
+    console.error("Error adding message:", error);
+    throw error;
   }
 }

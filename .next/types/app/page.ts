@@ -1,4 +1,4 @@
-// File: /Users/santiagogerickeparga/Desktop/AI/my-shopify-chatbot/app/page.tsx
+// File: /Users/santiagogerickeparga/Desktop/AI/my-shopify-chatbot_v2/app/page.tsx
 import * as entry from '../../../app/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

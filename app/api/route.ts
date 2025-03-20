@@ -60,6 +60,9 @@ export async function POST(req: Request): Promise<Response> {
     }
 
     const { message, context, currentTicket } = body;
+    console.log("Message:", message);
+    console.log("Context:", context);
+    console.log("Current ticket:", currentTicket);
 
     if (!message || typeof message !== "string") {
       return NextResponse.json(
@@ -88,6 +91,7 @@ export async function POST(req: Request): Promise<Response> {
     console.log("Classifying...");
     const classification = await aiService.classifyMessage(message, context);
     const { intent, parameters, language } = classification;
+    console.log("Classification:", intent);
 
     let updatedTicket = null;
     if (
@@ -99,11 +103,7 @@ export async function POST(req: Request): Promise<Response> {
       // Validar info de shopify
       const { order_number, email } = parameters;
       if (!order_number || !email) {
-        const response = await NoOrderNumberOrEmail(
-          parameters,
-          context,
-          language
-        );
+        const response = await NoOrderNumberOrEmail(language);
         return NextResponse.json({ response });
       }
       const shopifyData = await trackOrder(order_number, email);
@@ -217,6 +217,16 @@ export async function POST(req: Request): Promise<Response> {
         break;
 
       case "other-general":
+        console.log("Other general intent");
+        response = await aiService.generateFinalAnswer(
+          intent,
+          parameters,
+          null,
+          message,
+          context,
+          language
+        );
+        break;
 
       default:
         console.log("Other general intent or default case");
