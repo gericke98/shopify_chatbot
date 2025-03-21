@@ -144,10 +144,13 @@ export const Chat = ({
           console.log("Adding bot message:", botMessage);
           if (currentTicket?.id) {
             await addMessageToTicket(currentTicket.id, botMessage);
+            // Get the current messages from state to ensure we have the latest
+            setMessages((prevMessages) => {
+              const updatedMessages = [...prevMessages, botMessage];
+              onMessagesUpdate(updatedMessages);
+              return updatedMessages;
+            });
           }
-          const updatedMessages = [...messages, botMessage];
-          setMessages(updatedMessages);
-          onMessagesUpdate(updatedMessages);
         } else {
           console.error("No response in data:", data);
           throw new Error("No response received from bot");
@@ -163,7 +166,7 @@ export const Chat = ({
         console.error("Bot response error:", err);
       }
     },
-    [messages, currentTicket, onMessagesUpdate]
+    [currentTicket, onMessagesUpdate]
   );
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -182,16 +185,17 @@ export const Chat = ({
         timestamp: new Date().toISOString(),
       };
 
-      // Update UI first
-      const updatedMessages = [...messages, newMessage];
-      setMessages(updatedMessages);
-      onMessagesUpdate(updatedMessages);
-
-      // Then handle server operations
+      // First add message to database
       if (currentTicket.id) {
         await addMessageToTicket(currentTicket.id, newMessage);
       }
 
+      // Then update UI
+      const updatedMessages = [...messages, newMessage];
+      setMessages(updatedMessages);
+      onMessagesUpdate(updatedMessages);
+
+      // Finally get bot response
       await getBotResponse(userMessage);
     } catch (err) {
       toast.error("Failed to send message. Please try again.");
