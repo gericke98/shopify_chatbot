@@ -182,11 +182,15 @@ export const Chat = ({
         timestamp: new Date().toISOString(),
       };
 
-      await addMessageToTicket(currentTicket.id, newMessage);
-
+      // Update UI first
       const updatedMessages = [...messages, newMessage];
       setMessages(updatedMessages);
       onMessagesUpdate(updatedMessages);
+
+      // Then handle server operations
+      if (currentTicket.id) {
+        await addMessageToTicket(currentTicket.id, newMessage);
+      }
 
       await getBotResponse(userMessage);
     } catch (err) {
