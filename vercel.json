@@ -1,6 +1,15 @@
 {
   "functions": {
-    "api/*": {
+    "app/api/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/intent.ts": {
+      "maxDuration": 60
+    },
+    "app/api/messages/**": {
+      "maxDuration": 60
+    },
+    "app/api/outbound/**": {
       "maxDuration": 60
     }
   }
