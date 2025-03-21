@@ -78,11 +78,7 @@ export class AIService {
   Size recommendation guidelines:
   * For height < 165cm: Consider smaller sizes
   * For height 165-175cm: Consider medium sizes
-  * For height > 175cm: Consider larger sizes
-  * Adjust based on fit preference:
-    - Tight: Go one size down
-    - Regular: Use recommended size
-    - Loose: Go one size up`,
+  * For height > 175cm: Consider larger sizes`,
 
     ADDRESS_CONFIRMATION: `You are a customer service rep helping with address validation.
   
@@ -99,7 +95,7 @@ export class AIService {
 
   private readonly RETURNS_PORTAL_URL =
     "https://shameless-returns-web.vercel.app";
-  private readonly MODEL = "gpt-4o-mini";
+  private readonly MODEL = process.env.OPENAI_MODEL || "gpt-4-turbo-preview";
   private readonly MAX_RETRIES = 3;
   private readonly RETRY_DELAY = 1000;
 
@@ -572,4 +568,5 @@ IMPORTANT: You MUST respond in ${language || "English"}`;
   }
 }
 
+// Create and export a singleton instance
 export const aiService = new AIService();

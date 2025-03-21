@@ -1,4 +1,3 @@
-import { ClassifiedMessage, OpenAIMessage } from "@/types";
 import {
   extractCompleteOrder,
   extractProduct,
@@ -7,6 +6,7 @@ import {
 } from "../queries/order";
 import { aiService } from "./ai";
 import { sendEmail } from "./mail";
+import { MessageParameters } from "@/app/types/api";
 
 // Types for size management
 type SizeChart = {
@@ -179,6 +179,11 @@ const sizeCharts: Record<string, SizeChart> = {
   },
 };
 
+type ChatMessage = {
+  role: string;
+  content: string;
+};
+
 export async function NoOrderNumberOrEmail(language: string): Promise<string> {
   const prompt =
     language === "Spanish"
@@ -188,10 +193,8 @@ export async function NoOrderNumberOrEmail(language: string): Promise<string> {
 }
 
 export async function InvalidCredentials(
-  parameters: ClassifiedMessage["parameters"],
-  context: OpenAIMessage[],
   language: string,
-  error: "InvalidOrderNumber" | "EmailMismatch" | undefined
+  error?: string
 ): Promise<string> {
   let prompt = "";
   console.log("error", error);
@@ -214,8 +217,8 @@ export async function InvalidCredentials(
 }
 
 export async function handleOrderTracking(
-  parameters: ClassifiedMessage["parameters"],
-  context: OpenAIMessage[],
+  parameters: MessageParameters,
+  context: ChatMessage[],
   language: string
 ): Promise<string> {
   const { order_number, email } = parameters;
@@ -226,12 +229,7 @@ export async function handleOrderTracking(
 
   const shopifyData = await trackOrder(order_number, email);
   if (!shopifyData.success) {
-    return await InvalidCredentials(
-      parameters,
-      context,
-      language,
-      shopifyData.error
-    );
+    return await InvalidCredentials(language, shopifyData.error);
   }
 
   return await aiService.generateFinalAnswer(
@@ -245,9 +243,9 @@ export async function handleOrderTracking(
 }
 
 export async function handleDeliveryIssue(
-  parameters: ClassifiedMessage["parameters"],
+  parameters: MessageParameters,
   message: string,
-  context: OpenAIMessage[],
+  context: ChatMessage[],
   language: string
 ): Promise<string> {
   try {
@@ -257,12 +255,7 @@ export async function handleDeliveryIssue(
     }
     const shopifyData = await trackOrder(order_number, email);
     if (!shopifyData.success) {
-      return await InvalidCredentials(
-        parameters,
-        context,
-        language,
-        shopifyData.error
-      );
+      return await InvalidCredentials(language, shopifyData.error);
     }
     if (parameters.order_number && parameters.email) {
       await sendEmail(
@@ -290,9 +283,9 @@ export async function handleDeliveryIssue(
 }
 
 export async function handleChangeDelivery(
-  parameters: ClassifiedMessage["parameters"],
+  parameters: MessageParameters,
   message: string,
-  context: OpenAIMessage[],
+  context: ChatMessage[],
   language: string
 ): Promise<string> {
   const { order_number, email, new_delivery_info, delivery_address_confirmed } =
@@ -304,12 +297,7 @@ export async function handleChangeDelivery(
 
   const shopifyData = await extractCompleteOrder(order_number, email);
   if (!shopifyData.success) {
-    return await InvalidCredentials(
-      parameters,
-      context,
-      language,
-      shopifyData.error
-    );
+    return await InvalidCredentials(language, shopifyData.error);
   }
 
   if (!shopifyData?.success || !shopifyData?.order) {
@@ -324,7 +312,7 @@ export async function handleChangeDelivery(
   }
 
   if (!shopifyData.order.fulfillments?.length) {
-    // Caso de que todavía no se ha enviado el pedido
+    // Order not yet shipped
     if (!new_delivery_info) {
       return await aiService.confirmDeliveryAddress(
         parameters,
@@ -336,7 +324,6 @@ export async function handleChangeDelivery(
 
     const addressValidation =
       await aiService.validateAddress(new_delivery_info);
-    console.log("addressValidation", addressValidation);
     if (!addressValidation.formattedAddress) {
       return await aiService.confirmDeliveryAddress(
         parameters,
@@ -367,172 +354,10 @@ export async function handleChangeDelivery(
       context,
       language
     );
-  } else {
-    console.log("Pedido ya enviado");
-    console.log(shopifyData.order.fulfillments);
-    if (!new_delivery_info) {
-      // Preguntar la nueva dirección
-      return await aiService.confirmDeliveryAddress(
-        parameters,
-        message,
-        context,
-        language
-      );
-    }
+  }
 
-    const addressValidation =
-      await aiService.validateAddress(new_delivery_info);
-    console.log("addressValidation", addressValidation);
-    console.log(delivery_address_confirmed);
-    if (!addressValidation.formattedAddress) {
-      return await aiService.confirmDeliveryAddress(
-        parameters,
-        message,
-        context,
-        language
-      );
-    }
-
-    if (delivery_address_confirmed) {
-      console.log("Entro en inicio de llamada");
-      // Make an outbound call to notify about the address change
-      try {
-        // Aquí iría el teléfono de la empresa de envíos
-        const phoneNumber = "+34608667749";
-
-        if (phoneNumber) {
-          // Prepare the prompt for the outbound call
-          const callPrompt = `Eres una persona llamada Silvia. Estás llamando a una empresa de envíos para modificar la dirección de envío de tu paquete. Responde en 3 a 7 oraciones en la mayoría de los casos.
-                Si te pregunta, aquí tienes información adicional sobre el pedido: 
-                - Número de seguimiento ${shopifyData.order.fulfillments[0].tracking_number}
-                - Nueva dirección de entrega: ${addressValidation.formattedAddress}
-                Actúa como el cliente y no como un agente, es decir, la persona a la que llamas te tiene que dar la solución, tú no le tienes que ayudar en resolver sus problemas.`;
-          console.log("callPrompt", callPrompt);
-
-          const firstMessage =
-            language === "Spanish"
-              ? `Hola, soy Silvia. Llamo para cambiar la dirección de envío de mi pedido`
-              : `Hello, this is Silvia. I'm calling to change the delivery address of my order.`;
-
-          // Make the outbound call request
-          const callResponse = await fetch(
-            `${process.env.OUTBOUND_CALL_URL || "https://c110-81-33-205-107.ngrok-free.app"}/outbound-call`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                prompt: callPrompt,
-                first_message: firstMessage,
-                number: phoneNumber,
-              }),
-            }
-          );
-
-          const callData = await callResponse.json();
-          if (!callData.success) {
-            throw new Error(callData.error || "Failed to initiate call");
-          }
-
-          const callSid = callData.callSid;
-
-          // Wait for the call to complete using polling
-          let callCompleted = false;
-          const maxWaitTime = 300; // 5 minutes in seconds
-          let waitedTime = 0;
-
-          while (!callCompleted && waitedTime < maxWaitTime) {
-            // Wait 5 seconds between checks
-            await new Promise((resolve) => setTimeout(resolve, 5000));
-            waitedTime += 5;
-
-            try {
-              // Check if the call has completed
-              console.log(
-                `Checking call status for ${callSid}, waited ${waitedTime} seconds`
-              );
-
-              try {
-                const statusResponse = await fetch(
-                  `${process.env.OUTBOUND_CALL_URL || "https://c110-81-33-205-107.ngrok-free.app"}/call-status/${callSid}`
-                );
-
-                if (statusResponse.ok) {
-                  const statusData = await statusResponse.json();
-
-                  if (
-                    statusData.status === "completed" ||
-                    statusData.status === "failed" ||
-                    statusData.status === "busy" ||
-                    statusData.status === "no-answer" ||
-                    statusData.status === "canceled"
-                  ) {
-                    callCompleted = true;
-                    console.log(
-                      "Call completed with status:",
-                      statusData.status
-                    );
-                  }
-                } else {
-                  console.log(
-                    "Error checking call status:",
-                    statusResponse.status
-                  );
-                }
-              } catch (error) {
-                console.error(
-                  "Network error checking call status:",
-                  error instanceof Error ? error.message : String(error)
-                );
-              }
-
-              // If we've been waiting for more than 30 seconds, assume the call is in progress
-              // and show a message to the user
-              if (waitedTime >= 30 && !callCompleted) {
-                // Break out of the loop after 30 seconds regardless of call status
-                console.log(
-                  "Proceeding after 30 seconds regardless of call status"
-                );
-                callCompleted = true;
-              }
-            } catch (error) {
-              console.error("Error in call status check loop:", error);
-
-              // If any error occurs, don't keep the user waiting
-              if (waitedTime > 30) {
-                callCompleted = true;
-              }
-            }
-          }
-          // Update the order in Shopify
-          await updateShippingAddress(
-            shopifyData.order.admin_graphql_api_id,
-            addressValidation.formattedAddress,
-            shopifyData.order.shipping_address
-          );
-
-          // After call is completed or timeout, show confirmation message
-          const confirmationMessage =
-            language === "Spanish"
-              ? `¡Perfecto! He actualizado la dirección de envío a:\n\n${addressValidation.formattedAddress}\n\n¡Tu pedido se enviará a esta nueva dirección! 📦✨`
-              : `Perfect! I've updated the shipping address to:\n\n${addressValidation.formattedAddress}\n\nYour order will be shipped to this new address! 📦✨`;
-
-          return confirmationMessage;
-        }
-      } catch (error) {
-        console.error("Error making or monitoring outbound call:", error);
-
-        // Return an error message to the user
-        const errorMessage =
-          language === "Spanish"
-            ? "Lo siento, hubo un problema al realizar la llamada. Por favor, intenta más tarde."
-            : "Sorry, there was a problem making the call. Please try again later.";
-
-        return errorMessage;
-      }
-    }
-
+  // Order already shipped
+  if (!new_delivery_info) {
     return await aiService.confirmDeliveryAddress(
       parameters,
       message,
@@ -540,12 +365,127 @@ export async function handleChangeDelivery(
       language
     );
   }
+
+  const addressValidation = await aiService.validateAddress(new_delivery_info);
+  if (!addressValidation.formattedAddress) {
+    return await aiService.confirmDeliveryAddress(
+      parameters,
+      message,
+      context,
+      language
+    );
+  }
+
+  if (delivery_address_confirmed) {
+    try {
+      const phoneNumber = "+34608667749";
+
+      if (phoneNumber) {
+        const callPrompt = `Eres una persona llamada Silvia. Estás llamando a una empresa de envíos para modificar la dirección de envío de tu paquete. Responde en 3 a 7 oraciones en la mayoría de los casos.
+              Si te pregunta, aquí tienes información adicional sobre el pedido: 
+              - Número de seguimiento ${shopifyData.order.fulfillments[0].tracking_number}
+              - Nueva dirección de entrega: ${addressValidation.formattedAddress}
+              Actúa como el cliente y no como un agente, es decir, la persona a la que llamas te tiene que dar la solución, tú no le tienes que ayudar en resolver sus problemas.`;
+
+        const firstMessage =
+          language === "Spanish"
+            ? `Hola, soy Silvia. Llamo para cambiar la dirección de envío de mi pedido`
+            : `Hello, this is Silvia. I'm calling to change the delivery address of my order.`;
+
+        const callResponse = await fetch(
+          `${process.env.OUTBOUND_CALL_URL || "https://c110-81-33-205-107.ngrok-free.app"}/outbound-call`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              prompt: callPrompt,
+              first_message: firstMessage,
+              number: phoneNumber,
+            }),
+          }
+        );
+
+        const callData = await callResponse.json();
+        if (!callData.success) {
+          throw new Error(callData.error || "Failed to initiate call");
+        }
+
+        const callSid = callData.callSid;
+        let callCompleted = false;
+        const maxWaitTime = 300;
+        let waitedTime = 0;
+
+        while (!callCompleted && waitedTime < maxWaitTime) {
+          await new Promise((resolve) => setTimeout(resolve, 5000));
+          waitedTime += 5;
+
+          try {
+            const statusResponse = await fetch(
+              `${process.env.OUTBOUND_CALL_URL || "https://c110-81-33-205-107.ngrok-free.app"}/call-status/${callSid}`
+            );
+
+            if (statusResponse.ok) {
+              const statusData = await statusResponse.json();
+              if (
+                statusData.status === "completed" ||
+                statusData.status === "failed" ||
+                statusData.status === "busy" ||
+                statusData.status === "no-answer" ||
+                statusData.status === "canceled"
+              ) {
+                callCompleted = true;
+              }
+            }
+
+            if (waitedTime >= 30 && !callCompleted) {
+              callCompleted = true;
+            }
+          } catch (error) {
+            console.error("Error in call status check loop:", error);
+            if (waitedTime > 30) {
+              callCompleted = true;
+            }
+          }
+        }
+
+        await updateShippingAddress(
+          shopifyData.order.admin_graphql_api_id,
+          addressValidation.formattedAddress,
+          shopifyData.order.shipping_address
+        );
+
+        const confirmationMessage =
+          language === "Spanish"
+            ? `¡Perfecto! He actualizado la dirección de envío a:\n\n${addressValidation.formattedAddress}\n\n¡Tu pedido se enviará a esta nueva dirección! 📦✨`
+            : `Perfect! I've updated the shipping address to:\n\n${addressValidation.formattedAddress}\n\nYour order will be shipped to this new address! 📦✨`;
+
+        return confirmationMessage;
+      }
+    } catch (error) {
+      console.error("Error making or monitoring outbound call:", error);
+      const errorMessage =
+        language === "Spanish"
+          ? "Lo siento, hubo un problema al realizar la llamada. Por favor, intenta más tarde."
+          : "Sorry, there was a problem making the call. Please try again later.";
+
+      return errorMessage;
+    }
+  }
+
+  return await aiService.confirmDeliveryAddress(
+    parameters,
+    message,
+    context,
+    language
+  );
 }
 
 export async function handleUpdateOrder(
-  parameters: ClassifiedMessage["parameters"],
+  parameters: MessageParameters,
   message: string,
-  context: OpenAIMessage[],
+  context: ChatMessage[],
   language: string
 ): Promise<string> {
   const { order_number, email, update_type } = parameters;
@@ -556,12 +496,7 @@ export async function handleUpdateOrder(
 
   const shopifyData = await extractCompleteOrder(order_number, email);
   if (!shopifyData.success) {
-    return await InvalidCredentials(
-      parameters,
-      context,
-      language,
-      shopifyData.error
-    );
+    return await InvalidCredentials(language, shopifyData.error);
   }
 
   if (!update_type) {
@@ -604,12 +539,43 @@ export async function handleUpdateOrder(
 }
 
 export async function handleProductInquiry(
-  parameters: ClassifiedMessage["parameters"],
+  parameters: Partial<MessageParameters>,
   message: string,
-  context: OpenAIMessage[],
+  context: ChatMessage[],
   language: string
 ): Promise<string> {
   const { product_name, height, fit } = parameters;
+
+  // Create a complete MessageParameters object with default values
+  const validatedParams: MessageParameters = {
+    order_number: "",
+    email: "",
+    product_handle: "",
+    new_delivery_info: "",
+    delivery_status: "",
+    tracking_number: "",
+    delivery_address_confirmed: false,
+    return_type: "",
+    return_reason: "",
+    returns_website_sent: false,
+    product_type: "",
+    product_name: product_name || "",
+    size: "",
+    fit: fit || "",
+    size_query: "true",
+    update_type: "",
+    height: height || "",
+    weight: "",
+    usual_size: "",
+  };
+
+  // First check if we have a product name
+  if (!product_name) {
+    return language === "Spanish"
+      ? "¿Sobre qué producto te gustaría saber la talla?"
+      : "Which product would you like to know the size for?";
+  }
+
   const shopifyData = await extractProduct(product_name);
 
   // For size queries, we need both product data and size-related parameters
@@ -632,14 +598,7 @@ export async function handleProductInquiry(
       } else if (upperTitle.includes("POLO")) {
         product_type = "POLO";
       }
-    }
-    // If asking about sizing, we need height and fit preference
-    if (!product) {
-      const promptMessage =
-        language === "Spanish"
-          ? `Para recomendarte la mejor talla, necesito saber el nombre del producto`
-          : `To recommend the best size, I need to know the product name`;
-      return promptMessage;
+      validatedParams.product_type = product_type;
     }
 
     // If asking about sizing, we need height and fit preference
@@ -647,7 +606,7 @@ export async function handleProductInquiry(
       shopifyData?.product && "title" in shopifyData.product
         ? shopifyData.product.title
         : "";
-    if ((!height || !fit) && productTitle) {
+    if (!height || !fit) {
       const promptMessage =
         language === "Spanish"
           ? `Para recomendarte la mejor talla para el ${productTitle}, necesito saber:\n${!height ? "- Tu altura (en cm)\n" : ""}${!fit ? "- Tu preferencia de ajuste (ajustado, regular, holgado)" : ""}`
@@ -665,7 +624,7 @@ export async function handleProductInquiry(
 
     return await aiService.generateFinalAnswer(
       "product_sizing",
-      parameters,
+      validatedParams,
       shopifyData,
       message,
       context,
@@ -675,23 +634,7 @@ export async function handleProductInquiry(
   }
 
   // For non-sizing product inquiries or when product is not found
-  if (!shopifyData?.success || !shopifyData?.product) {
-    return await aiService.generateFinalAnswer(
-      "product_inquiry",
-      parameters,
-      null,
-      message,
-      context,
-      language
-    );
-  }
-
-  return await aiService.generateFinalAnswer(
-    "product_inquiry",
-    parameters,
-    shopifyData,
-    message,
-    context,
-    language
-  );
+  return language === "Spanish"
+    ? "Lo siento, no pude encontrar ese producto. ¿Podrías verificar el nombre?"
+    : "Sorry, I couldn't find that product. Could you verify the name?";
 }

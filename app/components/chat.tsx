@@ -3,401 +3,372 @@ import { toast, Toaster } from "sonner";
 import Image from "next/image";
 import { Message, Ticket } from "@/types";
 import { addMessageToTicket } from "../actions/tickets";
-import {
-  FormEvent,
-  useEffect,
-  useRef,
-  useState,
-  useCallback,
-  useMemo,
-} from "react";
+import { FormEvent, useEffect, useRef, useState, useCallback } from "react";
 
 type ChatProps = {
   inputmessages: Message[];
   inputcurrentTicket: Ticket | undefined;
+  onMessagesUpdate: (messages: Message[]) => void;
 };
 
-export const Chat = ({ inputmessages, inputcurrentTicket }: ChatProps) => {
-  const [language, setLanguage] = useState<"English" | "Spanish">("English");
+export const Chat = ({
+  inputmessages,
+  inputcurrentTicket,
+  onMessagesUpdate,
+}: ChatProps) => {
   const [inputMessage, setInputMessage] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [isInitialLoading, setIsInitialLoading] = useState<boolean>(true);
   const [messages, setMessages] = useState<Message[]>(inputmessages);
   const [currentTicket, setCurrentTicket] = useState<Ticket | undefined>(
     inputcurrentTicket
   );
-  const [retryCount, setRetryCount] = useState<number>(0);
+  const [textareaHeight, setTextareaHeight] = useState("44px");
+  const [isAtBottom, setIsAtBottom] = useState(true);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
-  const MAX_RETRIES = 3;
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const chatContainerRef = useRef<HTMLDivElement | null>(null);
 
-  // Initial setup from props
+  // Scroll handling
+  const handleScroll = useCallback(() => {
+    if (!chatContainerRef.current) return;
+
+    const { scrollHeight, scrollTop, clientHeight } = chatContainerRef.current;
+    const bottom = Math.abs(scrollHeight - scrollTop - clientHeight) < 50;
+    setIsAtBottom(bottom);
+  }, []);
+
+  // Scroll to bottom when messages change if we were already at bottom
+  useEffect(() => {
+    if (isAtBottom) {
+      chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, isAtBottom]);
+
+  // Add scroll listener
+  useEffect(() => {
+    const container = chatContainerRef.current;
+    if (container) {
+      container.addEventListener("scroll", handleScroll);
+      return () => container.removeEventListener("scroll", handleScroll);
+    }
+  }, [handleScroll]);
+
+  // Initial setup from props with error boundary
   useEffect(() => {
     try {
-      setMessages(inputmessages);
-      setCurrentTicket(inputcurrentTicket);
-    } catch (error) {
-      toast.error(`Error loading initial data: ${error}`, {
-        duration: 5000,
-        position: "top-center",
-      });
-    } finally {
-      setIsInitialLoading(false);
-    }
-  }, [inputmessages, inputcurrentTicket]);
-
-  // Load messages from local storage on initial render
-  useEffect(() => {
-    const storedMessages = localStorage.getItem(
-      `chat-messages-${inputcurrentTicket?.id}`
-    );
-    if (storedMessages) {
-      setMessages(JSON.parse(storedMessages));
-    } else {
-      setMessages(inputmessages);
-    }
-  }, [inputcurrentTicket?.id, inputmessages]);
-
-  // Save messages to local storage whenever they change
-  useEffect(() => {
-    if (inputcurrentTicket?.id && messages.length > 0) {
-      localStorage.setItem(
-        `chat-messages-${inputcurrentTicket.id}`,
-        JSON.stringify(messages)
+      if (JSON.stringify(messages) !== JSON.stringify(inputmessages)) {
+        setMessages(inputmessages);
+      }
+      if (currentTicket?.id !== inputcurrentTicket?.id) {
+        setCurrentTicket(inputcurrentTicket);
+      }
+    } catch (err) {
+      console.error("Error updating chat state:", err);
+      toast.error(
+        "There was an error updating the chat. Please refresh the page.",
+        {
+          duration: 5000,
+          position: "top-center",
+        }
       );
     }
-  }, [messages, inputcurrentTicket?.id]);
+  }, [inputmessages, inputcurrentTicket, messages, currentTicket]);
 
-  // Scroll to bottom when messages change
-  useEffect(() => {
-    const scrollToBottom = () => {
-      chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    };
+  // Auto-resize textarea with debounce
+  const adjustTextareaHeight = useCallback(() => {
+    if (!textareaRef.current) return;
 
-    scrollToBottom();
+    textareaRef.current.style.height = "44px";
+    const scrollHeight = textareaRef.current.scrollHeight;
+    const newHeight = Math.min(scrollHeight, 120);
+    textareaRef.current.style.height = `${newHeight}px`;
+    setTextareaHeight(`${newHeight}px`);
+  }, []);
 
-    // For cases where images might load after render
-    const timeoutId = setTimeout(scrollToBottom, 100);
+  // Optimized bot response handler
+  const getBotResponse = useCallback(
+    async (userMessage: string) => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
 
-    return () => clearTimeout(timeoutId);
-  }, [messages]);
+      try {
+        console.log("Sending request to API:", {
+          message: userMessage,
+          context: messages.map((msg) => ({
+            role: msg.sender === "user" ? "user" : "assistant",
+            content: msg.text,
+          })),
+          currentTicket,
+        });
 
-  const errorMessageByLanguage = useMemo(
-    () => ({
-      English: "Sorry, something went wrong. Please try again.",
-      Spanish: "Lo siento, algo salió mal. Por favor, inténtalo de nuevo.",
-    }),
-    []
-  );
+        const response = await fetch("/api", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            message: userMessage,
+            context: messages.map((msg) => ({
+              role: msg.sender === "user" ? "user" : "assistant",
+              content: msg.text,
+            })),
+            currentTicket,
+          }),
+          signal: controller.signal,
+        });
 
-  const handleLanguageChange = useCallback(
-    (e: React.ChangeEvent<HTMLSelectElement>) => {
-      setLanguage(e.target.value as "English" | "Spanish");
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error("API Response not OK:", {
+            status: response.status,
+            statusText: response.statusText,
+            body: errorText,
+          });
+          throw new Error(
+            `Error ${response.status}: ${response.statusText}\n${errorText}`
+          );
+        }
+
+        const data = await response.json();
+        console.log("API Response:", data);
+
+        if (data.data?.response) {
+          const botMessage = {
+            sender: "bot",
+            text: data.data.response,
+            timestamp: new Date().toISOString(),
+          };
+
+          console.log("Adding bot message:", botMessage);
+          await addMessageToTicket(currentTicket?.id, botMessage);
+          const updatedMessages = [...messages, botMessage];
+          setMessages(updatedMessages);
+          onMessagesUpdate(updatedMessages);
+        } else {
+          console.error("No response in data:", data);
+          throw new Error("No response received from bot");
+        }
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name === "AbortError") {
+          toast.error("Request timed out. Please try again.");
+        } else {
+          toast.error(
+            `Failed to get response: ${err instanceof Error ? err.message : "Unknown error"}`
+          );
+        }
+        console.error("Bot response error:", err);
+      }
     },
-    []
+    [messages, currentTicket, onMessagesUpdate]
   );
 
-  const handleInputChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      setInputMessage(e.target.value);
-    },
-    []
-  );
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!inputMessage.trim() || !currentTicket || isLoading) return;
 
-  const sendMessageToAI = async (
-    message: string,
-    context: { role: string; content: string }[],
-    language: "English" | "Spanish",
-    ticket?: Ticket
-  ): Promise<void> => {
+    const userMessage = inputMessage.trim();
+    setInputMessage("");
+    setIsLoading(true);
+    setTextareaHeight("44px");
+
     try {
-      const res = await fetch("/api", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message,
-          context,
-          language,
-          currentTicket: ticket,
-        }),
-      });
-
-      if (!res.ok) {
-        throw new Error(`API request failed with status ${res.status}`);
-      }
-
-      const data = await res.json();
-
-      if (data.updatedTicket) {
-        setCurrentTicket(data.updatedTicket.data);
-      }
-
-      const botMessage = {
-        sender: "bot" as const,
-        text: data.response,
-        timestamp: new Date().toLocaleTimeString(),
+      const newMessage = {
+        sender: "user",
+        text: userMessage,
+        timestamp: new Date().toISOString(),
       };
 
-      // Add bot message to UI immediately
-      setMessages((prev) => [...prev, botMessage]);
+      await addMessageToTicket(currentTicket.id, newMessage);
 
-      // Then send to server
-      await addMessageToTicket(currentTicket?.id, botMessage);
-    } catch (error) {
-      // Implement retry logic
-      if (retryCount < MAX_RETRIES) {
-        setRetryCount((prev) => prev + 1);
-        await new Promise((resolve) => setTimeout(resolve, 1000 * retryCount));
-        return sendMessageToAI(message, context, language, ticket);
-      }
-      throw error; // Re-throw if max retries exceeded
+      const updatedMessages = [...messages, newMessage];
+      setMessages(updatedMessages);
+      onMessagesUpdate(updatedMessages);
+
+      await getBotResponse(userMessage);
+    } catch (err) {
+      toast.error("Failed to send message. Please try again.");
+      console.error("Message submission error:", err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleSubmit = useCallback(
-    async (e: FormEvent<HTMLFormElement>): Promise<void> => {
-      e.preventDefault();
-      const trimmedMessage = inputMessage.trim();
-      if (!trimmedMessage) return;
-
-      const userMessage = {
-        sender: "user" as const,
-        text: trimmedMessage,
-        timestamp: new Date().toLocaleTimeString(),
-      };
-
-      setInputMessage("");
-      setIsLoading(true);
-      setRetryCount(0);
-
-      try {
-        // Add user message to UI immediately
-        setMessages((prev) => [...prev, userMessage]);
-
-        // Send message to server
-        await addMessageToTicket(currentTicket?.id, userMessage);
-
-        if (!currentTicket?.admin) {
-          const context = messages.map((msg) => ({
-            role: msg.sender === "user" ? "user" : "system",
-            content: msg.text,
-          }));
-
-          // Only call AI if no admin has taken over
-          await sendMessageToAI(
-            trimmedMessage,
-            context,
-            language,
-            currentTicket
-          );
+  // Scroll to bottom button
+  const ScrollToBottomButton = () =>
+    !isAtBottom && (
+      <button
+        onClick={() =>
+          chatEndRef.current?.scrollIntoView({ behavior: "smooth" })
         }
-      } catch (error) {
-        console.error("Error submitting message:", error);
-        const errorMessage = errorMessageByLanguage[language];
-
-        toast.error(errorMessage, {
-          duration: 5000,
-          position: "top-center",
-        });
-
-        // Remove the optimistically added message on error
-        setMessages((prev) => prev.filter((msg) => msg !== userMessage));
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [messages, inputMessage, currentTicket, language, errorMessageByLanguage]
-  );
-
-  const placeholderText = useMemo(
-    () =>
-      language === "English" ? "Type your message..." : "Escribe tu mensaje...",
-    [language]
-  );
-
-  const buttonText = useMemo(
-    () => (language === "English" ? "Send" : "Enviar"),
-    [language]
-  );
-
-  const headerText = useMemo(
-    () =>
-      language === "English"
-        ? "Customer Support Assistant"
-        : "Asistente de Atención al Cliente",
-    [language]
-  );
-
-  if (isInitialLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex items-center justify-center">
-        <div className="flex space-x-2">
-          <div className="w-3 h-3 bg-blue-500 rounded-full animate-bounce"></div>
-          <div
-            className="w-3 h-3 bg-blue-500 rounded-full animate-bounce"
-            style={{ animationDelay: "0.2s" }}
-          ></div>
-          <div
-            className="w-3 h-3 bg-blue-500 rounded-full animate-bounce"
-            style={{ animationDelay: "0.4s" }}
-          ></div>
-        </div>
-      </div>
+        className="absolute bottom-20 right-6 p-2 rounded-full bg-blue-500 text-white shadow-lg hover:bg-blue-600 transition-all duration-200 z-20"
+        aria-label="Scroll to latest messages"
+      >
+        <svg
+          className="w-5 h-5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M19 14l-7 7m0 0l-7-7m7 7V3"
+          />
+        </svg>
+      </button>
     );
-  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
-      <Toaster />
-      <div className="max-w-4xl mx-auto min-h-screen p-4 sm:p-6">
-        {/* Enhanced Header */}
-        <header className="mb-4 sm:mb-6 bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-0 mb-4">
-            <div className="flex items-center gap-4">
-              <div className="h-10 w-40 sm:h-12 sm:w-48 relative">
-                <Image
-                  src="/logo.png"
-                  alt="Shameless Collective Logo"
-                  fill
-                  className="object-contain"
-                  priority
-                />
-              </div>
-              <div className="h-6 w-px bg-gray-200 hidden sm:block" />
-              <p className="text-base sm:text-lg text-gray-700 font-medium hidden sm:block">
-                {headerText}
-              </p>
-            </div>
-
-            {/* Enhanced Language Selector */}
-            <select
-              value={language}
-              onChange={handleLanguageChange}
-              className="w-full sm:w-auto px-4 py-2 rounded-lg border border-gray-200 bg-white text-gray-700 
-                focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer hover:border-gray-300 
-                transition-colors duration-200"
-            >
-              <option value="English">🇬🇧 English</option>
-              <option value="Spanish">🇪🇸 Español</option>
-            </select>
-          </div>
-          <p className="text-base sm:text-lg text-gray-700 font-medium text-center sm:hidden">
-            {headerText}
-          </p>
-        </header>
-
-        {/* Enhanced Chat Window */}
-        <div
-          className="h-[calc(100vh-280px)] sm:h-[calc(100vh-300px)] border border-gray-200 rounded-xl 
-          p-4 sm:p-6 overflow-y-auto bg-white shadow-lg backdrop-blur-sm"
-        >
-          {messages.map((msg, idx) => (
+    <div className="flex flex-col h-full relative">
+      <div
+        ref={chatContainerRef}
+        className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-gray-50 to-white scroll-smooth"
+      >
+        {messages.map((message, index) => (
+          <div
+            key={`${message.timestamp}-${index}`}
+            className={`flex ${
+              message.sender === "user" ? "justify-end" : "justify-start"
+            } animate-fade-in-up`}
+            role="listitem"
+            aria-label={`${message.sender} message`}
+          >
             <div
-              key={idx}
-              className={`flex mb-4 sm:mb-6 ${
-                msg.sender === "user" ? "justify-end" : "justify-start"
+              className={`flex items-start gap-2 max-w-[80%] ${
+                message.sender === "user" ? "flex-row-reverse" : "flex-row"
               }`}
             >
-              {/* Bot Avatar for non-user messages */}
-              {msg.sender !== "user" && (
-                <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center mr-2 flex-shrink-0 border border-gray-100">
+              {message.sender === "bot" && (
+                <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 bg-white ring-2 ring-blue-500/20 shadow-md">
+                  <div className="relative w-full h-full">
+                    <Image
+                      src="/logo.png"
+                      alt="Bot avatar"
+                      fill
+                      className="object-contain p-1"
+                      priority={index === messages.length - 1}
+                    />
+                  </div>
+                </div>
+              )}
+              <div
+                className={`rounded-2xl px-4 py-2 shadow-sm backdrop-blur-sm
+                  ${
+                    message.sender === "user"
+                      ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white"
+                      : "bg-white/90 text-gray-800 border border-gray-100"
+                  }
+                  transform transition-all duration-200 hover:scale-[1.02] hover:shadow-md`}
+              >
+                <div className="whitespace-pre-wrap break-words">
+                  {message.text}
+                </div>
+                <time
+                  dateTime={message.timestamp}
+                  className={`text-[10px] mt-1 block ${
+                    message.sender === "user"
+                      ? "text-blue-100"
+                      : "text-gray-400"
+                  }`}
+                >
+                  {new Date(message.timestamp).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </time>
+              </div>
+            </div>
+          </div>
+        ))}
+        {isLoading && (
+          <div
+            className="flex justify-start animate-fade-in-up"
+            role="status"
+            aria-label="Loading response"
+          >
+            <div className="flex items-start gap-2">
+              <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 bg-white ring-2 ring-blue-500/20 shadow-md">
+                <div className="relative w-full h-full">
                   <Image
                     src="/logo.png"
-                    alt="Shameless Collective"
-                    width={24}
-                    height={24}
-                    className="object-contain"
+                    alt="Bot avatar"
+                    fill
+                    className="object-contain p-1"
+                    priority
                   />
                 </div>
-              )}
-
-              <div className="flex flex-col max-w-[90%] sm:max-w-[80%]">
-                <div
-                  className={`px-4 sm:px-6 py-3 sm:py-4 rounded-2xl shadow-sm 
-                    ${
-                      msg.sender === "user"
-                        ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white"
-                        : "bg-gray-50 text-gray-900 border border-gray-100"
-                    } transition-all duration-200 hover:shadow-md`}
-                >
-                  {msg.text}
-                </div>
-                <span
-                  className={`text-[10px] sm:text-xs text-gray-500 mt-1 mx-2
-                  ${msg.sender === "user" ? "text-right" : "text-left"}`}
-                >
-                  {msg.timestamp}
-                </span>
               </div>
-
-              {/* User Avatar for user messages */}
-              {msg.sender === "user" && (
-                <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center ml-2 flex-shrink-0">
-                  <span className="text-white text-sm">👤</span>
-                </div>
-              )}
-            </div>
-          ))}
-
-          {/* Enhanced Loading Indicator */}
-          {isLoading && (
-            <div className="flex mb-4 sm:mb-6 justify-start items-center">
-              <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center mr-2 flex-shrink-0 border border-gray-100">
-                <Image
-                  src="/logo.png"
-                  alt="Shameless Collective"
-                  width={24}
-                  height={24}
-                  className="object-contain"
-                />
-              </div>
-              <div className="bg-gray-50 px-4 py-3 rounded-2xl shadow-sm border border-gray-100">
-                <div className="flex space-x-2">
-                  <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div>
-                  <div
-                    className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"
-                    style={{ animationDelay: "0.2s" }}
-                  ></div>
-                  <div
-                    className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"
-                    style={{ animationDelay: "0.4s" }}
-                  ></div>
+              <div className="bg-white/90 rounded-2xl px-4 py-2 shadow-sm border border-gray-100">
+                <div className="flex gap-1">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce [animation-delay:0.2s]"></div>
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce [animation-delay:0.4s]"></div>
                 </div>
               </div>
             </div>
-          )}
-          <div ref={chatEndRef} />
-        </div>
-
-        {/* Enhanced Chat Input */}
-        <form onSubmit={handleSubmit} className="mt-4 sm:mt-6">
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 bg-white p-3 rounded-xl shadow-sm border border-gray-100">
-            <input
-              type="text"
-              placeholder={placeholderText}
-              value={inputMessage}
-              onChange={handleInputChange}
-              className="flex-1 text-black border border-gray-200 rounded-xl px-4 sm:px-6 py-3 sm:py-4 
-                focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                placeholder:text-gray-400 transition-all duration-200"
-              required
-            />
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-blue-600 text-white 
-                px-6 sm:px-8 py-3 sm:py-4 rounded-xl hover:opacity-90 transition-all duration-200
-                disabled:from-gray-400 disabled:to-gray-500 shadow-sm hover:shadow-md
-                flex items-center justify-center gap-2"
-            >
-              {buttonText}
-              {!isLoading && <span>→</span>}
-              {isLoading && (
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              )}
-            </button>
           </div>
-        </form>
+        )}
+        <div ref={chatEndRef} />
       </div>
+
+      <ScrollToBottomButton />
+
+      <form
+        onSubmit={handleSubmit}
+        className="border-t p-4 flex gap-2 items-start bg-white shadow-lg relative"
+      >
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-gray-50/50"></div>
+        <div className="relative z-10 flex-1 flex items-center">
+          <textarea
+            ref={textareaRef}
+            value={inputMessage}
+            onChange={(e) => {
+              setInputMessage(e.target.value);
+              adjustTextareaHeight();
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                const form = e.currentTarget.form;
+                if (form && inputMessage.trim() && !isLoading) {
+                  form.requestSubmit();
+                }
+              }
+            }}
+            style={{ height: textareaHeight }}
+            placeholder="Type a message..."
+            className="w-full resize-none rounded-xl border border-gray-200 p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px] max-h-[120px] text-gray-900 bg-white/80 backdrop-blur-sm transition-all duration-200"
+            rows={1}
+            disabled={isLoading}
+            aria-label="Message input"
+          />
+        </div>
+        <div className="relative z-10 flex items-center self-end h-[44px]">
+          <button
+            type="submit"
+            disabled={isLoading || !inputMessage.trim()}
+            className="p-3 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 
+              disabled:opacity-50 disabled:hover:from-blue-500 disabled:hover:to-blue-600 flex-shrink-0 transition-all duration-200 
+              shadow-sm hover:shadow-md hover:scale-105 active:scale-95 h-full"
+            aria-label={isLoading ? "Sending message..." : "Send message"}
+          >
+            <svg
+              viewBox="0 0 24 24"
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              aria-hidden="true"
+            >
+              <path d="M5 12h14m-7-7l7 7-7 7" />
+            </svg>
+          </button>
+        </div>
+      </form>
+      <Toaster />
     </div>
   );
 };

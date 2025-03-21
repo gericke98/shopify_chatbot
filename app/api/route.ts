@@ -13,61 +13,73 @@ import {
   NoOrderNumberOrEmail,
 } from "./intent";
 import { handleOrderTracking } from "./intent";
+import { handleError, APIError, createRequestId } from "./utils/error-handler";
+import {
+  ClassifiedMessage,
+  Intent,
+  MessageParameters,
+  APIResponse,
+} from "@/app/types/api";
+
 export const dynamic = "force-dynamic";
+export const maxDuration = 300; // 5 minutes timeout for long-running operations
 
 export async function GET(request: NextRequest) {
-  const ticketId = request.nextUrl.searchParams.get("ticketId");
-
-  if (!ticketId) {
-    return NextResponse.json(
-      { error: "Missing ticketId parameter" },
-      { status: 400 }
-    );
-  }
+  const requestId = createRequestId();
 
   try {
-    const messages = await getMessages(ticketId);
-    return NextResponse.json({ messages });
-  } catch (error) {
-    console.error("Error fetching messages:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch messages" },
-      { status: 500 }
-    );
-  }
-}
+    const ticketId = request.nextUrl.searchParams.get("ticketId");
 
-export async function POST(req: Request): Promise<Response> {
-  try {
-    // Rate limiting check could be added here
-    const contentType = req.headers.get("content-type");
-    if (!contentType || !contentType.includes("application/json")) {
-      return NextResponse.json(
-        { error: "Content-Type must be application/json" },
-        { status: 415 }
+    if (!ticketId) {
+      throw new APIError(
+        "Missing ticketId parameter",
+        400,
+        "MISSING_PARAMETER"
       );
     }
 
+    const messages = await getMessages(ticketId);
+    return NextResponse.json<APIResponse>({
+      data: { messages },
+      requestId,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    return handleError(error, requestId);
+  }
+}
+
+export async function POST(req: NextRequest): Promise<Response> {
+  const requestId = createRequestId();
+
+  try {
+    // Validate content type
+    const contentType = req.headers.get("content-type");
+    if (!contentType?.includes("application/json")) {
+      throw new APIError(
+        "Content-Type must be application/json",
+        415,
+        "INVALID_CONTENT_TYPE"
+      );
+    }
+
+    // Parse and validate request body
     let body;
     try {
       body = await req.json();
     } catch (error) {
-      console.error("Error parsing JSON:", error);
-      return NextResponse.json(
-        { error: "Invalid JSON in request body" },
-        { status: 400 }
-      );
+      console.error("Error parsing request body:", error);
+      throw new APIError("Invalid JSON in request body", 400, "INVALID_JSON");
     }
 
     const { message, context, currentTicket } = body;
-    console.log("Message:", message);
-    console.log("Context:", context);
-    console.log("Current ticket:", currentTicket);
 
+    // Validate required fields
     if (!message || typeof message !== "string") {
-      return NextResponse.json(
-        { error: "Message must be a non-empty string" },
-        { status: 400 }
+      throw new APIError(
+        "Message must be a non-empty string",
+        400,
+        "INVALID_MESSAGE"
       );
     }
 
@@ -83,16 +95,31 @@ export async function POST(req: Request): Promise<Response> {
             typeof item.content === "string"
         ))
     ) {
-      return NextResponse.json(
-        { error: "Context must be an array of {role, content} objects" },
-        { status: 400 }
-      );
+      throw new APIError("Invalid context format", 400, "INVALID_CONTEXT");
     }
-    console.log("Classifying...");
-    const classification = await aiService.classifyMessage(message, context);
-    const { intent, parameters, language } = classification;
-    console.log("Classification:", intent);
 
+    // Message classification with timeout
+    const classificationPromise = aiService.classifyMessage(message, context);
+    const classification = (await Promise.race([
+      classificationPromise,
+      new Promise<never>((_, reject) =>
+        setTimeout(
+          () =>
+            reject(
+              new APIError(
+                "Classification timeout",
+                408,
+                "CLASSIFICATION_TIMEOUT"
+              )
+            ),
+          30000
+        )
+      ),
+    ])) as ClassifiedMessage;
+
+    const { intent, parameters, language } = classification;
+
+    // Handle ticket updates
     let updatedTicket = null;
     if (
       currentTicket?.id &&
@@ -100,22 +127,29 @@ export async function POST(req: Request): Promise<Response> {
       parameters.email &&
       (!currentTicket.orderNumber || !currentTicket.email)
     ) {
-      // Validar info de shopify
-      const { order_number, email } = parameters;
-      if (!order_number || !email) {
-        const response = await NoOrderNumberOrEmail(language);
-        return NextResponse.json({ response });
+      if (!parameters.order_number || !parameters.email) {
+        return NextResponse.json<APIResponse>({
+          data: { response: await NoOrderNumberOrEmail(language) },
+          requestId,
+          timestamp: new Date().toISOString(),
+        });
       }
-      const shopifyData = await trackOrder(order_number, email);
+
+      const shopifyData = await trackOrder(
+        parameters.order_number,
+        parameters.email
+      );
+
       if (!shopifyData.success) {
-        const response = await InvalidCredentials(
-          parameters,
-          context,
-          language,
-          shopifyData.error
-        );
-        return NextResponse.json({ response });
+        return NextResponse.json<APIResponse>({
+          data: {
+            response: await InvalidCredentials(language, shopifyData.error),
+          },
+          requestId,
+          timestamp: new Date().toISOString(),
+        });
       }
+
       updatedTicket = await updateTicketWithOrderInfo(
         currentTicket.id,
         parameters.order_number,
@@ -123,77 +157,38 @@ export async function POST(req: Request): Promise<Response> {
         shopifyData.order?.customer
       );
     }
-    console.log("Message classification:", { intent, parameters, language });
 
-    let response: string;
-    // Process intent
-    switch (intent) {
-      case "order_tracking":
-        console.log("Order tracking intent");
-        response = await handleOrderTracking(parameters, context, language);
-        break;
-
-      case "returns_exchange":
-        console.log("Returns exchange intent");
-        response =
-          language === "Spanish"
+    // Process intent with timeout
+    const intentHandler = async (
+      intent: Intent,
+      parameters: MessageParameters
+    ) => {
+      switch (intent) {
+        case "order_tracking":
+          return handleOrderTracking(parameters, context, language);
+        case "returns_exchange":
+          return language === "Spanish"
             ? "¡Claro! Puedes hacer el cambio o devolución en el siguiente link: https://shameless-returns-web.vercel.app"
             : "Sure thing! You can make the change or return in the following link: https://shameless-returns-web.vercel.app";
-        break;
-
-      case "delivery_issue":
-        console.log("Delivery issue intent");
-        response = await handleDeliveryIssue(
-          parameters,
-          message,
-          context,
-          language
-        );
-        break;
-
-      case "change_delivery":
-        console.log("Change delivery intent");
-        response = await handleChangeDelivery(
-          parameters,
-          message,
-          context,
-          language
-        );
-        break;
-
-      case "product_sizing":
-        console.log("Product sizing intent");
-        response = await handleProductInquiry(
-          parameters,
-          message,
-          context,
-          language
-        );
-        break;
-
-      case "update_order":
-        console.log("Update order intent");
-        response = await handleUpdateOrder(
-          parameters,
-          message,
-          context,
-          language
-        );
-        break;
-
-      case "other-order":
-        console.log("Other order-related intent");
-        if (!parameters.order_number || !parameters.email) {
-          response =
-            language === "Spanish"
+        case "delivery_issue":
+          return handleDeliveryIssue(parameters, message, context, language);
+        case "change_delivery":
+          return handleChangeDelivery(parameters, message, context, language);
+        case "product_sizing":
+          return handleProductInquiry(parameters, message, context, language);
+        case "update_order":
+          return handleUpdateOrder(parameters, message, context, language);
+        case "other-order":
+          if (!parameters.order_number || !parameters.email) {
+            return language === "Spanish"
               ? "Para ayudarte mejor con tu consulta sobre el pedido, necesito el número de pedido (tipo #12345) y tu email 😊"
               : "To better help you with your order-related query, I need your order number (like #12345) and email 😊";
-        } else {
+          }
           const orderData = await trackOrder(
             parameters.order_number,
             parameters.email
           );
-          response = await aiService.generateFinalAnswer(
+          return aiService.generateFinalAnswer(
             intent,
             parameters,
             orderData,
@@ -201,51 +196,41 @@ export async function POST(req: Request): Promise<Response> {
             context,
             language
           );
-        }
-        break;
+        default:
+          return aiService.generateFinalAnswer(
+            intent,
+            parameters,
+            null,
+            message,
+            context,
+            language
+          );
+      }
+    };
 
-      case "conversation_end":
-        console.log("Conversation end intent");
-        response = await aiService.generateFinalAnswer(
-          intent,
-          parameters,
-          null,
-          message,
-          context,
-          language
-        );
-        break;
+    const response = await Promise.race([
+      intentHandler(intent, parameters),
+      new Promise<never>((_, reject) =>
+        setTimeout(
+          () =>
+            reject(
+              new APIError(
+                "Response generation timeout",
+                408,
+                "RESPONSE_TIMEOUT"
+              )
+            ),
+          30000
+        )
+      ),
+    ]);
 
-      case "other-general":
-        console.log("Other general intent");
-        response = await aiService.generateFinalAnswer(
-          intent,
-          parameters,
-          null,
-          message,
-          context,
-          language
-        );
-        break;
-
-      default:
-        console.log("Other general intent or default case");
-        response = await aiService.generateFinalAnswer(
-          intent,
-          parameters,
-          null,
-          message,
-          context,
-          language
-        );
-    }
-
-    return NextResponse.json({ response, updatedTicket });
+    return NextResponse.json<APIResponse>({
+      data: { response, updatedTicket },
+      requestId,
+      timestamp: new Date().toISOString(),
+    });
   } catch (error) {
-    console.error("API Error:", error);
-    return NextResponse.json(
-      { error: "An error occurred processing your request." },
-      { status: 500 }
-    );
+    return handleError(error, requestId);
   }
 }

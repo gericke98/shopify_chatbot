@@ -85,17 +85,12 @@ export async function getTickets(): Promise<Ticket[]> {
 export const getTicket = cache(
   async (id: string): Promise<Ticket | undefined> => {
     try {
-      // Validate input
-      const validatedId = ticketIdSchema.parse(id);
-
-      console.log(`[ACTION] Getting ticket with ID: ${validatedId}`);
-      const ticket = await db.query.tickets.findFirst({
-        where: eq(tickets.id, validatedId),
+      const response = await fetch(`${process.env.API_URL}/tickets/${id}`, {
+        next: { tags: [`ticket-${id}`] },
       });
-
-      return ticket;
+      return response.json();
     } catch (error) {
-      console.error(`[ERROR] Failed to get ticket ${id}:`, error);
+      console.error("Error fetching ticket:", error);
       return undefined;
     }
   }
@@ -103,17 +98,15 @@ export const getTicket = cache(
 
 export const getMessages = cache(async (id: string): Promise<Message[]> => {
   try {
-    // Validate input
-    const validatedId = ticketIdSchema.parse(id);
-
-    console.log(`[ACTION] Getting messages for ticket ID: ${validatedId}`);
-    const messagesResponse = await db.query.messages.findMany({
-      where: eq(messages.ticketId, validatedId),
-    });
-
-    return messagesResponse;
+    const response = await fetch(
+      `${process.env.API_URL}/tickets/${id}/messages`,
+      {
+        next: { tags: [`messages-${id}`] },
+      }
+    );
+    return response.json();
   } catch (error) {
-    console.error(`[ERROR] Failed to get messages for ticket ${id}:`, error);
+    console.error("Error fetching messages:", error);
     return [];
   }
 });
@@ -346,34 +339,15 @@ export async function addMessageToTicket(
   if (!ticketId) return;
 
   try {
-    // Validate inputs
-    const validatedId = ticketIdSchema.parse(ticketId);
-    const validatedMessage = messageSchema.parse(message);
+    const apiUrl = process.env.API_URL || "http://localhost:3000/api";
+    await fetch(`${apiUrl}/tickets/${ticketId}/messages`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(message),
+    });
 
-    // Add the message to the database
-    const newMessage = await db
-      .insert(messages)
-      .values({
-        sender: validatedMessage.sender,
-        text: validatedMessage.text,
-        timestamp: formatDate(new Date().toISOString()),
-        ticketId: validatedId,
-      })
-      .returning();
-
-    // Update ticket's updatedAt timestamp
-    await db
-      .update(tickets)
-      .set({
-        updatedAt: formatDate(new Date().toISOString()),
-      })
-      .where(eq(tickets.id, validatedId));
-
-    // Revalidate both the specific ticket page and the messages
+    // Revalidate the messages cache
     revalidatePath(`/${ticketId}`);
-    revalidatePath(`/`);
-
-    return { status: 200, data: newMessage[0] };
   } catch (error) {
     console.error("Error adding message:", error);
     throw error;
