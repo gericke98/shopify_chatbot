@@ -334,8 +334,13 @@ export async function updateTicketAdmin(ticketId: string, admin: boolean) {
 
 export async function addMessageToTicket(ticketId: string, message: Message) {
   try {
-    // Use relative URL for API calls to ensure it works in both development and production
-    const response = await fetch("/api/messages", {
+    // Use localhost:3000 in development and production URL in production
+    const baseUrl =
+      process.env.NODE_ENV === "development"
+        ? process.env.DEVELOPMENT_URL
+        : process.env.PRODUCTION_URL;
+
+    const response = await fetch(`${baseUrl}/api/messages`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
