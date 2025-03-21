@@ -8,6 +8,7 @@ import {
   handleChangeDelivery,
   handleDeliveryIssue,
   handleProductInquiry,
+  handleProductInquiryRestock,
   handleUpdateOrder,
   InvalidCredentials,
   NoOrderNumberOrEmail,
@@ -22,7 +23,7 @@ import {
 } from "@/app/types/api";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60; // Maximum duration allowed for Vercel hobby plan
+export const maxDuration = 60;
 
 export async function GET(request: NextRequest) {
   const requestId = createRequestId();
@@ -163,6 +164,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       intent: Intent,
       parameters: MessageParameters
     ) => {
+      console.log("intent", intent);
       switch (intent) {
         case "order_tracking":
           return handleOrderTracking(parameters, context, language);
@@ -178,6 +180,13 @@ export async function POST(req: NextRequest): Promise<Response> {
           return handleProductInquiry(parameters, message, context, language);
         case "update_order":
           return handleUpdateOrder(parameters, message, context, language);
+        case "restock":
+          return handleProductInquiryRestock(
+            parameters,
+            message,
+            context,
+            language
+          );
         case "other-order":
           if (!parameters.order_number || !parameters.email) {
             return language === "Spanish"

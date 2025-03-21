@@ -6,6 +6,7 @@ export type Intent =
   | "product_sizing"
   | "update_order"
   | "other-order"
+  | "restock"
   | "conversation_end"
   | "other-general";
 
@@ -29,7 +30,7 @@ export interface MessageParameters {
   // Product related
   product_type: string;
   product_name: string;
-  size: string;
+  product_size: string;
   fit: string;
   size_query: string;
 
@@ -57,10 +58,3 @@ export interface APIResponse<T = unknown> {
   requestId: string;
   timestamp: string;
 }
-
-export interface OpenAIMessage {
-  role: string;
-  content: string;
-}
-
-export type ChatMessage = OpenAIMessage;

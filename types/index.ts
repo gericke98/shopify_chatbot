@@ -11,6 +11,7 @@ export type Intent =
   | "product_sizing"
   | "conversation_end"
   | "other-general"
+  | "restock"
   | "other-order"
   | "update_order";
 
@@ -105,12 +106,15 @@ export type ShopifyDataTracking = {
 
 export type ShopifyDataProduct = {
   success: boolean;
+  handle: string;
   product?: Product;
 };
 export type Product = {
   title: string;
   description: string;
   images: Image[];
+  handle: string;
+  status: string;
 };
 export type Image = {
   src: string;
@@ -151,4 +155,25 @@ export type OpenAIMessage = {
 export type CustomerData = {
   first_name: string;
   last_name: string;
+};
+
+export type SizeChart = {
+  sizes: Size[];
+  measurements: MeasurementType[];
+  productType: string;
+};
+
+type Size = "XS" | "S" | "M" | "L" | "XL" | "XXL" | "XXXL" | "ONE SIZE";
+
+type MeasurementType = {
+  name: string; // e.g., "Chest", "Length", "Sleeve", "Waist"
+  unit: "cm" | "in"; // centimeters or inches
+  values: {
+    [key in Size]?: number;
+  };
+};
+
+export type ChatMessage = {
+  role: string;
+  content: string;
 };

@@ -235,50 +235,50 @@ export const Chat = ({
     <div className="flex flex-col h-full relative">
       <div
         ref={chatContainerRef}
-        className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-gray-50 to-white scroll-smooth"
+        className="flex-1 overflow-y-auto px-3 py-2 space-y-2 bg-gradient-to-b from-gray-50 to-white scroll-smooth"
       >
         {messages.map((message, index) => (
           <div
             key={`${message.timestamp}-${index}`}
             className={`flex ${
               message.sender === "user" ? "justify-end" : "justify-start"
-            } animate-fade-in-up`}
+            } animate-fade-in-up w-full group`}
             role="listitem"
             aria-label={`${message.sender} message`}
           >
             <div
-              className={`flex items-start gap-2 max-w-[80%] ${
+              className={`flex items-end gap-1.5 max-w-[85%] w-fit ${
                 message.sender === "user" ? "flex-row-reverse" : "flex-row"
               }`}
             >
               {message.sender === "bot" && (
-                <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 bg-white ring-2 ring-blue-500/20 shadow-md">
+                <div className="w-6 h-6 mb-0.5 rounded-full overflow-hidden flex-shrink-0 bg-white ring-1 ring-blue-500/10 shadow-sm transition-transform group-hover:scale-105">
                   <div className="relative w-full h-full">
                     <Image
                       src="/logo.png"
                       alt="Bot avatar"
                       fill
-                      className="object-contain p-1"
+                      className="object-contain p-0.5"
                       priority={index === messages.length - 1}
                     />
                   </div>
                 </div>
               )}
               <div
-                className={`rounded-2xl px-4 py-2 shadow-sm backdrop-blur-sm
+                className={`rounded-lg px-3 py-1.5 shadow-sm backdrop-blur-sm
                   ${
                     message.sender === "user"
-                      ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white"
-                      : "bg-white/90 text-gray-800 border border-gray-100"
+                      ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white ml-8"
+                      : "bg-white/90 text-gray-700 border border-gray-100/50 mr-8"
                   }
-                  transform transition-all duration-200 hover:scale-[1.02] hover:shadow-md`}
+                  transform transition-all duration-200 hover:shadow-md group-hover:scale-[1.01]`}
               >
-                <div className="whitespace-pre-wrap break-words">
+                <div className="whitespace-pre-wrap leading-normal text-sm break-words">
                   {message.text}
                 </div>
                 <time
                   dateTime={message.timestamp}
-                  className={`text-[10px] mt-1 block ${
+                  className={`text-[9px] mt-0.5 block opacity-0 transition-opacity group-hover:opacity-100 ${
                     message.sender === "user"
                       ? "text-blue-100"
                       : "text-gray-400"
@@ -299,23 +299,23 @@ export const Chat = ({
             role="status"
             aria-label="Loading response"
           >
-            <div className="flex items-start gap-2">
-              <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 bg-white ring-2 ring-blue-500/20 shadow-md">
+            <div className="flex items-end gap-1.5">
+              <div className="w-6 h-6 mb-0.5 rounded-full overflow-hidden flex-shrink-0 bg-white ring-1 ring-blue-500/10 shadow-sm">
                 <div className="relative w-full h-full">
                   <Image
                     src="/logo.png"
                     alt="Bot avatar"
                     fill
-                    className="object-contain p-1"
+                    className="object-contain p-0.5"
                     priority
                   />
                 </div>
               </div>
-              <div className="bg-white/90 rounded-2xl px-4 py-2 shadow-sm border border-gray-100">
+              <div className="bg-white/90 rounded-lg px-3 py-2 shadow-sm border border-gray-100/50">
                 <div className="flex gap-1">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce [animation-delay:0.2s]"></div>
-                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce [animation-delay:0.4s]"></div>
+                  <div className="w-1.5 h-1.5 bg-blue-500/70 rounded-full animate-bounce"></div>
+                  <div className="w-1.5 h-1.5 bg-blue-500/70 rounded-full animate-bounce [animation-delay:0.2s]"></div>
+                  <div className="w-1.5 h-1.5 bg-blue-500/70 rounded-full animate-bounce [animation-delay:0.4s]"></div>
                 </div>
               </div>
             </div>

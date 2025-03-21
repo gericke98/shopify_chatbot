@@ -1,29 +1,14 @@
 import {
   extractCompleteOrder,
   extractProduct,
+  insertCustomer,
   trackOrder,
   updateShippingAddress,
 } from "../queries/order";
 import { aiService } from "./ai";
 import { sendEmail } from "./mail";
 import { MessageParameters } from "@/app/types/api";
-
-// Types for size management
-type SizeChart = {
-  sizes: Size[];
-  measurements: MeasurementType[];
-  productType: string;
-};
-
-type Size = "XS" | "S" | "M" | "L" | "XL" | "XXL" | "XXXL" | "ONE SIZE";
-
-type MeasurementType = {
-  name: string; // e.g., "Chest", "Length", "Sleeve", "Waist"
-  unit: "cm" | "in"; // centimeters or inches
-  values: {
-    [key in Size]?: number;
-  };
-};
+import { SizeChart, ChatMessage } from "@/types";
 
 // Example size chart for different product types
 const sizeCharts: Record<string, SizeChart> = {
@@ -177,11 +162,6 @@ const sizeCharts: Record<string, SizeChart> = {
     ],
     productType: "Polo",
   },
-};
-
-type ChatMessage = {
-  role: string;
-  content: string;
 };
 
 export async function NoOrderNumberOrEmail(language: string): Promise<string> {
@@ -546,29 +526,6 @@ export async function handleProductInquiry(
 ): Promise<string> {
   const { product_name, height, fit } = parameters;
 
-  // Create a complete MessageParameters object with default values
-  const validatedParams: MessageParameters = {
-    order_number: "",
-    email: "",
-    product_handle: "",
-    new_delivery_info: "",
-    delivery_status: "",
-    tracking_number: "",
-    delivery_address_confirmed: false,
-    return_type: "",
-    return_reason: "",
-    returns_website_sent: false,
-    product_type: "",
-    product_name: product_name || "",
-    size: "",
-    fit: fit || "",
-    size_query: "true",
-    update_type: "",
-    height: height || "",
-    weight: "",
-    usual_size: "",
-  };
-
   // First check if we have a product name
   if (!product_name) {
     return language === "Spanish"
@@ -598,7 +555,6 @@ export async function handleProductInquiry(
       } else if (upperTitle.includes("POLO")) {
         product_type = "POLO";
       }
-      validatedParams.product_type = product_type;
     }
 
     // If asking about sizing, we need height and fit preference
@@ -622,6 +578,29 @@ export async function handleProductInquiry(
         : "Sorry, I don't have size information for this specific product.";
     }
 
+    const validatedParams: MessageParameters = {
+      order_number: "",
+      email: "",
+      product_handle: "",
+      new_delivery_info: "",
+      delivery_status: "",
+      tracking_number: "",
+      delivery_address_confirmed: false,
+      return_type: "",
+      return_reason: "",
+      returns_website_sent: false,
+      product_type: "",
+      product_name: (productTitle || product_name || "") as string,
+      product_size: "",
+      fit: "",
+      size_query: "",
+      update_type: "",
+      height: "",
+      weight: "",
+      usual_size: "",
+      ...parameters,
+    };
+
     return await aiService.generateFinalAnswer(
       "product_sizing",
       validatedParams,
@@ -633,7 +612,119 @@ export async function handleProductInquiry(
     );
   }
 
-  // For non-sizing product inquiries or when product is not found
+  return language === "Spanish"
+    ? "Lo siento, no pude encontrar ese producto. ¿Podrías verificar el nombre?"
+    : "Sorry, I couldn't find that product. Could you verify the name?";
+}
+
+export async function handleProductInquiryRestock(
+  parameters: Partial<MessageParameters>,
+  message: string,
+  context: ChatMessage[],
+  language: string
+): Promise<string> {
+  const { product_name, email, product_size } = parameters;
+  const requestedSize = product_size?.toUpperCase() || "";
+  console.log("parameters", parameters);
+  // First check if we have a product name
+  if (!product_name) {
+    return language === "Spanish"
+      ? "¿Qué producto y qué talla te gustaría saber cuándo estará disponible?"
+      : "Which product and size would you like to know about restocking?";
+  }
+  if (!requestedSize) {
+    return language === "Spanish"
+      ? "¿Qué talla te gustaría saber cuándo estará disponible?"
+      : "Which size would you like to know about restocking?";
+  }
+  // Second check if we have stock of the product
+  const shopifyData = await extractProduct(product_name);
+  console.log("shopifyData", shopifyData.product);
+
+  const productData = shopifyData.product as {
+    variants?: Array<{ id: string; title: string; inventory_quantity: number }>;
+  };
+  const productHandle = shopifyData.product?.handle;
+  const matchingVariant = productData.variants?.find(
+    (variant) => variant.title.toUpperCase() === requestedSize
+  );
+
+  if (!matchingVariant) {
+    return language === "Spanish"
+      ? "Lo siento, no encontré esa talla específica para este producto."
+      : "Sorry, I couldn't find that specific size for this product.";
+  }
+
+  if (matchingVariant.inventory_quantity > 0 && productHandle) {
+    const link = `https://shamelesscollective.com/products/${productHandle}?variant=${matchingVariant.id}`;
+    return language === "Spanish"
+      ? `¡Buenas noticias! Esta talla está disponible! Consigue la tuya aquí: ${link}`
+      : `Good news! This size is available! Get it here: ${link}`;
+  }
+
+  // Third check if we have an email
+  if (!email || typeof email !== "string") {
+    return language === "Spanish"
+      ? "¡Perfecto! Si me dejas tu email te avisaré cuando el producto esté disponible 😊"
+      : "Perfect! If you share your email with me, I'll notify you when the product is back in stock 😊";
+  }
+
+  const productTitle: string =
+    shopifyData?.product &&
+    typeof shopifyData.product === "object" &&
+    shopifyData.product !== null &&
+    "title" in shopifyData.product &&
+    typeof shopifyData.product.title === "string"
+      ? shopifyData.product.title
+      : "";
+  // For restock queries, we need product data
+  if (
+    shopifyData?.success &&
+    shopifyData?.product &&
+    productTitle &&
+    typeof email === "string"
+  ) {
+    // Create customer
+    const response = await insertCustomer(email, productTitle);
+    if (response.success) {
+      console.log("Customer created successfully");
+    } else {
+      console.error("Error creating customer:", response.error);
+    }
+
+    const validatedParams: MessageParameters = {
+      order_number: "",
+      email: "",
+      product_handle: "",
+      new_delivery_info: "",
+      delivery_status: "",
+      tracking_number: "",
+      delivery_address_confirmed: false,
+      return_type: "",
+      return_reason: "",
+      returns_website_sent: false,
+      product_type: "",
+      product_name: (productTitle || product_name || "") as string,
+      product_size: requestedSize,
+      fit: "",
+      size_query: "",
+      update_type: "",
+      height: "",
+      weight: "",
+      usual_size: "",
+      ...parameters,
+    };
+
+    return await aiService.generateFinalAnswer(
+      "restock",
+      validatedParams,
+      shopifyData,
+      message,
+      context,
+      language
+    );
+  }
+
   return language === "Spanish"
     ? "Lo siento, no pude encontrar ese producto. ¿Podrías verificar el nombre?"
     : "Sorry, I couldn't find that product. Could you verify the name?";

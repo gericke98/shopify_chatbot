@@ -1,4 +1,4 @@
-import { Order, ShopifyDataProduct } from "@/types";
+import { Order, Product, ShopifyDataProduct } from "@/types";
 import { createSession } from "..";
 
 /// EXTRACT FUNCTION
@@ -333,4 +333,98 @@ export async function extractProduct(productName: string): Promise<{
 
   // Both order number and email match
   return { success: true, product: productShopify };
+}
+
+// Update shipping address
+export async function insertCustomer(
+  email: string,
+  productName: string
+): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  console.log("Inserting new customer");
+
+  try {
+    const query = `mutation customerCreate($input: CustomerInput!) {
+      customerCreate(input: $input) {
+        userErrors {
+          message
+          field
+        }
+        customer {
+          email
+          emailMarketingConsent {
+            marketingState
+          }
+          note
+        }
+      }
+    }`;
+
+    const response = await fetch(
+      `${process.env.SHOP_URL}/admin/api/${process.env.API_VERSION}/graphql.json`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Shopify-Access-Token": process.env.SHOPIFY_ACCESS_TOKEN as string,
+        },
+        body: JSON.stringify({
+          query,
+          variables: {
+            input: {
+              email: email,
+              emailMarketingConsent: {
+                marketingState: "SUBSCRIBED",
+              },
+              note: `Restock ${productName}`,
+            },
+          },
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!data.data?.customerCreate) {
+      return {
+        success: false,
+        error: data.errors?.[0]?.message || "Failed to create customer",
+      };
+    }
+
+    if (data.data.customerCreate.userErrors.length > 0) {
+      return {
+        success: false,
+        error: data.data.customerCreate.userErrors[0].message,
+      };
+    }
+
+    return {
+      success: true,
+    };
+  } catch (error) {
+    console.error("Error creating customer:", error);
+    return {
+      success: false,
+      error: "Failed to create customer",
+    };
+  }
+}
+
+export async function getAllActiveProducts() {
+  const session = createSession();
+  const url = `${process.env.SHOP_URL}/admin/api/${process.env.API_VERSION}/products.json?status=active`;
+  try {
+    const response = await fetch(url, session);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    return data.products.map((product: Product) => product.title);
+  } catch (error) {
+    console.error("Error fetching products:", error);
+    return [];
+  }
 }

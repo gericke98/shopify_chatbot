@@ -6,10 +6,13 @@ import {
   ShopifyData,
   ShopifyDataTracking,
 } from "@/types";
+import { getAllActiveProducts } from "../queries/order";
 
 export class AIService {
   private readonly apiKey: string;
   private readonly googleMapsApiKey: string;
+  private activeProducts: string[] = [];
+
   private readonly SYSTEM_PROMPTS = {
     CLASSIFICATION: `You are an intelligent assistant that classifies user messages for a Shopify ecommerce chatbot. Your task is to identify the user's intent and extract relevant parameters.
   
@@ -22,20 +25,40 @@ export class AIService {
   - If user asks about returns or exchange policy, classify it as returns_exchange intent
   - If user asks about changing the size of a product from their order, classify it as returns_exchange intent
   - If user asks about product sizes or sizing information, classify it as product_sizing intent
+  - If user asks about when a product will be back in stock, classify it as restock intent
   - If the user says "thank you", "thanks", "gracias", "ok", "perfect", "perfecto" or similar closing remarks without asking anything else, classify it as "conversation_end"
   - For queries that don't match other intents but are about an order (shipping, delivery, order status, etc), classify as "other-order"
   - For queries that don't match other intents and are not related to any order, classify as "other-general"
   - If user wants to update or modify their order, classify it as "update_order" and extract what they want to update (shipping_address or product) if mentioned
   
+  IMPORTANT: For product-related intents (product_sizing, restock):
+  - ALWAYS reset product parameters when a new product is mentioned, even if mentioned informally (e.g., "y el polo amarillo?", "what about the yellow polo?")
+  - Consider phrases like "y el/la..." (Spanish) or "what about the..." (English) as indicators of a new product mention
+  - When a new product is mentioned, RESET ALL product-related parameters (product_name, product_size, height, fit, product_handle)
+  - Only maintain previous product parameters if the user is EXPLICITLY referring to the same product (e.g., "that one", "este mismo")
+  - If there is ANY ambiguity about whether it's a new product, RESET the parameters
+  - For Spanish messages, treat informal references (e.g., "y el/la...", "que tal el/la...") as new product mentions
+
+  IMPORTANT: For order-related intents:
+  - When a new order is mentioned that's different from the previous one, RESET ALL order-related parameters (order_number, email, ...)
+  - Only maintain previous order parameters if the user is clearly referring to the same order
+  - If unsure whether it's the same order, reset the parameters
+  
   For product sizing queries:
   - Extract height in cm if provided
   - Extract fit preference (tight, regular, loose)
   - Set size_query to "true" if asking about sizing
-  - Extract product name or type if mentioned
-  
+  - Extract product_name and normalize it to match one of the active products: ${this.activeProducts.join(", ")}
+
+  For restock queries:
+  - Extract product_name and normalize it to match one of the active products: ${this.activeProducts.join(", ")}
+  - Extract product_size and normalize it to one of: "X-SMALL", "SMALL", "MEDIUM", "LARGE", "EXTRA LARGE"
+  - Extract email if provided
+  - Reset product parameters if a new product is mentioned
+
   Output ONLY a JSON object with the following structure:
   {
-    "intent": one of ["order_tracking", "returns_exchange", "change_delivery", "return_status", "promo_code", "other-order", "other-general", "delivery_issue", "conversation_end", "product_sizing", "update_order"],
+    "intent": one of ["order_tracking", "returns_exchange", "change_delivery", "return_status", "promo_code", "other-order", "other-general", "delivery_issue", "conversation_end", "product_sizing", "update_order", "restock"],
     "parameters": {
       "order_number": "extracted order number or empty string",
       "email": "extracted email or empty string", 
@@ -47,12 +70,13 @@ export class AIService {
       "return_type": "return or exchange or empty string",
       "returns_website_sent": "true if returns website URL was already sent, false otherwise",
       "product_name": "name of product being asked about or empty string",
+      "product_size": "X-SMALL" | "SMALL" | "MEDIUM" | "LARGE" | "EXTRA LARGE" | "",
       "size_query": "true if asking about sizing, empty string otherwise",
       "update_type": "shipping_address or product or empty string if not specified",
       "height": "height in cm or empty string",
       "fit": "tight, regular, loose, or empty string"
     },
-    "language": "English" or "Spanish" (detect the language of the message)
+    "language": "English" or "Spanish" (detect the language of the message, ignoring product names)
   }`,
 
     FINAL_ANSWER: `You are a friendly customer service rep named Santi working for Shameless Collective. Your role is to assist customers with their inquiries about orders, products, returns, and other ecommerce related questions.
@@ -108,6 +132,13 @@ export class AIService {
 
     this.apiKey = apiKey;
     this.googleMapsApiKey = googleMapsApiKey;
+
+    // Initialize active products
+    this.initializeProducts();
+  }
+
+  private async initializeProducts() {
+    this.activeProducts = await getAllActiveProducts();
   }
 
   private async callOpenAI(
@@ -193,6 +224,59 @@ export class AIService {
     };
   }
 
+  private getClassificationPrompt(): string {
+    return `You are an intelligent assistant that classifies user messages for a Shopify ecommerce chatbot. Your task is to identify the user's intent and extract relevant parameters.
+  
+  Consider both user messages and system responses in the conversation context when classifying. For example:
+  - If a user first tracks an order and receives a response saying it's delivered, then mentions they haven't received it, classify it as a delivery_issue
+  - If the system previously provided tracking info and the user reports issues, maintain that tracking number in the parameters
+  - If the system confirmed an order number/email pair in a previous response, maintain those in subsequent classifications
+  - For change_delivery intent, set delivery_address_confirmed to true ONLY if the user explicitly confirms the new address that was proposed by the system in a previous message. The confirmation should be in response to a system message that proposed a specific address.
+  - For returns_exchange intent, check if the returns website URL was already provided in previous system messages
+  - If user asks about returns or exchange policy, classify it as returns_exchange intent
+  - If user asks about changing the size of a product from their order, classify it as returns_exchange intent
+  - If user asks about product sizes or sizing information, classify it as product_sizing intent
+  - If user asks about when a product will be back in stock, classify it as restock intent
+  - If the user says "thank you", "thanks", "gracias", "ok", "perfect", "perfecto" or similar closing remarks without asking anything else, classify it as "conversation_end"
+  - For queries that don't match other intents but are about an order (shipping, delivery, order status, etc), classify as "other-order"
+  - For queries that don't match other intents and are not related to any order, classify as "other-general"
+  - If user wants to update or modify their order, classify it as "update_order" and extract what they want to update (shipping_address or product) if mentioned
+  
+  For product sizing queries:
+  - Extract height in cm if provided
+  - Extract fit preference (tight, regular, loose)
+  - Set size_query to "true" if asking about sizing
+  - Extract product name or type if mentioned
+
+  For restock queries:
+  - Extract product_name and normalize it to match one of the active products: ${this.activeProducts.join(", ")}
+  - Extract product_size and normalize it to one of: "X-SMALL", "SMALL", "MEDIUM", "LARGE", "EXTRA LARGE"
+  - Extract email if provided
+
+  Output ONLY a JSON object with the following structure:
+  {
+    "intent": one of ["order_tracking", "returns_exchange", "change_delivery", "return_status", "promo_code", "other-order", "other-general", "delivery_issue", "conversation_end", "product_sizing", "update_order", "restock"],
+    "parameters": {
+      "order_number": "extracted order number or empty string",
+      "email": "extracted email or empty string", 
+      "product_handle": "extracted product handle or empty string",
+      "new_delivery_info": "new delivery information or empty string",
+      "delivery_status": "delivered but not received or empty string",
+      "tracking_number": "tracking number from context or empty string",
+      "delivery_address_confirmed": "true if user explicitly confirms system's proposed address, false otherwise",
+      "return_type": "return or exchange or empty string",
+      "returns_website_sent": "true if returns website URL was already sent, false otherwise",
+      "product_name": "name of product being asked about or empty string",
+      "product_size": "X-SMALL" | "SMALL" | "MEDIUM" | "LARGE" | "EXTRA LARGE" | "",
+      "size_query": "true if asking about sizing, empty string otherwise",
+      "update_type": "shipping_address or product or empty string if not specified",
+      "height": "height in cm or empty string",
+      "fit": "tight, regular, loose, or empty string"
+    },
+    "language": "English" or "Spanish" (detect the language of the message, ignoring product names)
+  }`;
+  }
+
   async classifyMessage(
     message: string,
     context?: OpenAIMessage[]
@@ -209,7 +293,7 @@ export class AIService {
     }));
 
     const messages = [
-      { role: "system", content: this.SYSTEM_PROMPTS.CLASSIFICATION },
+      { role: "system", content: this.getClassificationPrompt() },
       ...(sanitizedContext || []),
       { role: "user", content: sanitizedMessage },
     ];
@@ -376,8 +460,10 @@ export class AIService {
   ${JSON.stringify(parameters, null, 2)}
   ${sizeCharts ? `\nSize Chart Data:\n${sizeCharts}` : ""}
   
-  Additional Context:
+  User last message:
   ${sanitizedUserMessage}
+
+  Additional Context:
   ${
     sanitizedContext?.length
       ? `\n${sanitizedContext.map((msg) => msg.content).join("\n")}`
@@ -402,7 +488,8 @@ export class AIService {
   - If user asks about shipping address, check shopifyData.shipping_address object
   - If user asks about billing address, check shopifyData.billing_address object
   - If user asks about their personal information, check shopifyData.customer object
-  - Maintain continuity with any previous interactions`
+  - Maintain continuity with any previous interactions
+  `
       : "Provide a concise response that directly addresses the customer's needs. If you don't have enough information, briefly ask for the specific details needed."
   }
   
@@ -412,6 +499,7 @@ export class AIService {
   - When sharing links, provide them directly (e.g., "https://example.com" instead of "[Click here](https://example.com)")
   - If user asks about delivery times, inform them normal delivery time is 3-5 business days
   - If user indicates waiting longer than 5 business days, inform them we will open a ticket to investigate
+  - If user asks about sales duration, inform them you cannot disclose that information but there are very limited units available
   - Respond ONLY in ${language || "English"}`;
 
     try {
