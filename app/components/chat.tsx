@@ -142,7 +142,9 @@ export const Chat = ({
           };
 
           console.log("Adding bot message:", botMessage);
-          await addMessageToTicket(currentTicket?.id, botMessage);
+          if (currentTicket?.id) {
+            await addMessageToTicket(currentTicket.id, botMessage);
+          }
           const updatedMessages = [...messages, botMessage];
           setMessages(updatedMessages);
           onMessagesUpdate(updatedMessages);
