@@ -22,7 +22,7 @@ import {
 } from "@/app/types/api";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 300; // 5 minutes timeout for long-running operations
+export const maxDuration = 60; // Maximum duration allowed for Vercel hobby plan
 
 export async function GET(request: NextRequest) {
   const requestId = createRequestId();
