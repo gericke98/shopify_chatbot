@@ -332,22 +332,25 @@ export async function updateTicketAdmin(ticketId: string, admin: boolean) {
   }
 }
 
-export async function addMessageToTicket(
-  ticketId: string | undefined,
-  message: Message
-) {
-  if (!ticketId) return;
-
+export async function addMessageToTicket(ticketId: string, message: Message) {
   try {
-    const apiUrl = process.env.API_URL || "http://localhost:3000/api";
-    await fetch(`${apiUrl}/tickets/${ticketId}/messages`, {
+    const apiUrl = process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}/api`
+      : process.env.API_URL || "http://localhost:3000/api";
+
+    const response = await fetch(`${apiUrl}/messages`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(message),
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ ticketId, message }),
     });
 
-    // Revalidate the messages cache
-    revalidatePath(`/${ticketId}`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
   } catch (error) {
     console.error("Error adding message:", error);
     throw error;
