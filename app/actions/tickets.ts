@@ -334,11 +334,8 @@ export async function updateTicketAdmin(ticketId: string, admin: boolean) {
 
 export async function addMessageToTicket(ticketId: string, message: Message) {
   try {
-    const apiUrl = process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}/api`
-      : process.env.API_URL || "http://localhost:3000/api";
-
-    const response = await fetch(`${apiUrl}/messages`, {
+    // Use relative URL for API calls to ensure it works in both development and production
+    const response = await fetch("/api/messages", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -348,6 +345,11 @@ export async function addMessageToTicket(ticketId: string, message: Message) {
 
     if (!response.ok) {
       const errorText = await response.text();
+      console.error("Error adding message:", {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText,
+      });
       throw new Error(`HTTP error! status: ${response.status}\n${errorText}`);
     }
 
