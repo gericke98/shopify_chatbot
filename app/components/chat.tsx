@@ -141,7 +141,6 @@ export const Chat = ({
             timestamp: new Date().toISOString(),
           };
 
-          console.log("Adding bot message:", botMessage);
           if (currentTicket?.id) {
             await addMessageToTicket(currentTicket.id, botMessage);
             // Get the current messages from state to ensure we have the latest

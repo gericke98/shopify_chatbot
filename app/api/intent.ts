@@ -2,6 +2,7 @@ import {
   extractCompleteOrder,
   extractProduct,
   insertCustomer,
+  createPromoCode,
   trackOrder,
   updateShippingAddress,
 } from "../queries/order";
@@ -179,7 +180,6 @@ export async function InvalidCredentials(
   let prompt = "";
   console.log("error", error);
   if (error === "InvalidOrderNumber") {
-    console.log("InvalidOrderNumber");
     prompt =
       language === "Spanish"
         ? "¡Vaya! No encuentro ningún pedido con ese número 😅 ¿Puedes revisarlo y volver a intentarlo?"
@@ -187,7 +187,6 @@ export async function InvalidCredentials(
   }
 
   if (error === "EmailMismatch") {
-    console.log("EmailMismatch");
     prompt =
       language === "Spanish"
         ? "¡Ups! El email no coincide con el del pedido 🤔 ¿Puedes revisar si es el correcto?"
@@ -619,8 +618,6 @@ export async function handleProductInquiry(
 
 export async function handleProductInquiryRestock(
   parameters: Partial<MessageParameters>,
-  message: string,
-  context: ChatMessage[],
   language: string
 ): Promise<string> {
   const { product_name, email, product_size } = parameters;
@@ -629,17 +626,32 @@ export async function handleProductInquiryRestock(
   // First check if we have a product name
   if (!product_name) {
     return language === "Spanish"
-      ? "¿Qué producto y qué talla te gustaría saber cuándo estará disponible?"
-      : "Which product and size would you like to know about restocking?";
+      ? "¿Qué producto te gustaría saber cuándo estará disponible?"
+      : "Which product would you like to know about restocking?";
+  }
+  if (product_name == "not_found") {
+    return language === "Spanish"
+      ? `Lo siento, no pude encontrar el producto. ¿Podrías confirmar el nombre exacto del producto? Por ejemplo: "Without shame crewnweck"`
+      : `I'm sorry, I couldn't find the product. Could you confirm the exact product name? For example: "Without shame crewnweck"`;
   }
   if (!requestedSize) {
     return language === "Spanish"
       ? "¿Qué talla te gustaría saber cuándo estará disponible?"
       : "Which size would you like to know about restocking?";
   }
+  if (product_size == "not_found") {
+    return language === "Spanish"
+      ? `Lo siento, no pude encontrar la talla indicada. ¿Podrías confirmar la talla exacta del producto? Por ejemplo: "Talla S"`
+      : `I'm sorry, I couldn't find the size you mentioned. Could you confirm the exact size of the product? For example: "Small"`;
+  }
   // Second check if we have stock of the product
   const shopifyData = await extractProduct(product_name);
-  console.log("shopifyData", shopifyData.product);
+
+  if (!shopifyData || !shopifyData.product) {
+    return language === "Spanish"
+      ? `Lo siento, no pude encontrar el producto "${product_name}". ¿Podrías confirmar el nombre exacto del producto? Por ejemplo: "Without shame crewnweck"`
+      : `I'm sorry, I couldn't find the product "${product_name}". Could you confirm the exact product name? For example: "Without shame crewnweck"`;
+  }
 
   const productData = shopifyData.product as {
     variants?: Array<{ id: string; title: string; inventory_quantity: number }>;
@@ -687,45 +699,50 @@ export async function handleProductInquiryRestock(
     // Create customer
     const response = await insertCustomer(email, productTitle);
     if (response.success) {
-      console.log("Customer created successfully");
+      return language === "Spanish"
+        ? `¡Perfecto! Te avisaremos en ${email} cuando el ${productTitle} esté disponible 😊`
+        : `Perfect! We'll notify you at ${email} when the ${productTitle} is back in stock 😊`;
     } else {
+      // Handle the error case more gracefully
       console.error("Error creating customer:", response.error);
+      return language === "Spanish"
+        ? "Lo siento, ha ocurrido un error al registrar tu correo. ¿Podrías intentarlo de nuevo?"
+        : "I'm sorry, there was an error registering your email. Could you please try again?";
     }
-
-    const validatedParams: MessageParameters = {
-      order_number: "",
-      email: "",
-      product_handle: "",
-      new_delivery_info: "",
-      delivery_status: "",
-      tracking_number: "",
-      delivery_address_confirmed: false,
-      return_type: "",
-      return_reason: "",
-      returns_website_sent: false,
-      product_type: "",
-      product_name: (productTitle || product_name || "") as string,
-      product_size: requestedSize,
-      fit: "",
-      size_query: "",
-      update_type: "",
-      height: "",
-      weight: "",
-      usual_size: "",
-      ...parameters,
-    };
-
-    return await aiService.generateFinalAnswer(
-      "restock",
-      validatedParams,
-      shopifyData,
-      message,
-      context,
-      language
-    );
   }
 
   return language === "Spanish"
     ? "Lo siento, no pude encontrar ese producto. ¿Podrías verificar el nombre?"
     : "Sorry, I couldn't find that product. Could you verify the name?";
+}
+
+export async function handlePromoCode(
+  parameters: Partial<MessageParameters>,
+  message: string,
+  context: ChatMessage[],
+  language: string
+): Promise<string> {
+  const { email } = parameters;
+  if (!email || typeof email !== "string") {
+    return language === "Spanish"
+      ? "Vamos a hacer una cosa, si me dejas tu email te crearé un descuento del 20% que podrás usar durante los próximos 15 minutos😊"
+      : "Perfect! If you share your email with me, I'll notify you when the product is back in stock 😊";
+  }
+  // Create customer
+  const response = await insertCustomer(email);
+  if (response.success) {
+    const promoCode = await createPromoCode();
+    if (promoCode.success) {
+      return language === "Spanish"
+        ? `Aquí tienes tu descuento del 20%: ${promoCode.code}. No se lo digas a nadie! Caduca en 15 minutos por lo que aprovéchalo!`
+        : `Here's your 20% discount code: ${promoCode.code}. Don't tell anyone! It expires in 15 minutes so take advantage of it!`;
+    } else {
+      return language === "Spanish"
+        ? "Lo siento, ha ocurrido un error al crear el descuento. ¿Podrías intentarlo de nuevo?"
+        : "I'm sorry, there was an error creating the discount. Could you please try again?";
+    }
+  }
+  return language === "Spanish"
+    ? "Lo siento, ha ocurrido un error al crear el descuento. ¿Podrías intentarlo de nuevo?"
+    : "I'm sorry, there was an error creating the discount. Could you please try again?";
 }

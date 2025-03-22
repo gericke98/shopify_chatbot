@@ -338,7 +338,7 @@ export async function extractProduct(productName: string): Promise<{
 // Update shipping address
 export async function insertCustomer(
   email: string,
-  productName: string
+  productName?: string
 ): Promise<{
   success: boolean;
   error?: string;
@@ -378,7 +378,7 @@ export async function insertCustomer(
               emailMarketingConsent: {
                 marketingState: "SUBSCRIBED",
               },
-              note: `Restock ${productName}`,
+              note: productName ? `Restock ${productName}` : "",
             },
           },
         }),
@@ -426,5 +426,101 @@ export async function getAllActiveProducts() {
   } catch (error) {
     console.error("Error fetching products:", error);
     return [];
+  }
+}
+
+export async function createPromoCode(): Promise<{
+  success: boolean;
+  code?: string;
+  error?: string;
+}> {
+  console.log("Creating new promo code");
+
+  try {
+    const query = `mutation CreateDiscount($input: DiscountCodeBasicInput!) {
+      discountCodeBasicCreate(basicCodeDiscount: $input) {
+        codeDiscountNode {
+          id
+          codeDiscount {
+            ... on DiscountCodeBasic {
+              title
+              codes(first: 10) {
+                nodes {
+                  code
+                }
+              }
+              startsAt
+              endsAt
+            }
+          }
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }`;
+
+    const response = await fetch(
+      `${process.env.SHOP_URL}/admin/api/${process.env.API_VERSION}/graphql.json`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Shopify-Access-Token": process.env.SHOPIFY_ACCESS_TOKEN as string,
+        },
+        body: JSON.stringify({
+          query,
+          variables: {
+            input: {
+              title: "PRUEBA20",
+              code: "PRUEBA20",
+              startsAt: new Date().toISOString(),
+              endsAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+              customerSelection: {
+                all: true,
+              },
+              customerGets: {
+                value: {
+                  percentage: 0.2,
+                },
+                items: {
+                  all: true,
+                },
+              },
+              appliesOncePerCustomer: true,
+            },
+          },
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!data.data?.CreateDiscount) {
+      return {
+        success: false,
+        error: data.errors?.[0]?.message || "Failed to create discount",
+      };
+    }
+
+    if (data.data.CreateDiscount.userErrors.length > 0) {
+      return {
+        success: false,
+        error: data.data.CreateDiscount.userErrors[0].message,
+      };
+    }
+
+    return {
+      success: true,
+      code: data.data.CreateDiscount.codeDiscountNode.codeDiscount.codes
+        .nodes[0].code,
+    };
+  } catch (error) {
+    console.error("Error creating discount:", error);
+    return {
+      success: false,
+      error: "Failed to create discount",
+    };
   }
 }

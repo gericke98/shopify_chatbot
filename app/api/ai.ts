@@ -26,6 +26,7 @@ export class AIService {
   - If user asks about changing the size of a product from their order, classify it as returns_exchange intent
   - If user asks about product sizes or sizing information, classify it as product_sizing intent
   - If user asks about when a product will be back in stock, classify it as restock intent
+  - If user asks about discounts, promotions, or wants to receive offers, classify it as promo_code intent and extract their email
   - If the user says "thank you", "thanks", "gracias", "ok", "perfect", "perfecto" or similar closing remarks without asking anything else, classify it as "conversation_end"
   - For queries that don't match other intents but are about an order (shipping, delivery, order status, etc), classify as "other-order"
   - For queries that don't match other intents and are not related to any order, classify as "other-general"
@@ -49,12 +50,27 @@ export class AIService {
   - Extract fit preference (tight, regular, loose)
   - Set size_query to "true" if asking about sizing
   - Extract product_name and normalize it to match one of the active products: ${this.activeProducts.join(", ")}
+  - If product_name cannot be normalized to match any of the active products, set it to "not_found"
 
   For restock queries:
   - Extract product_name and normalize it to match one of the active products: ${this.activeProducts.join(", ")}
-  - Extract product_size and normalize it to one of: "X-SMALL", "SMALL", "MEDIUM", "LARGE", "EXTRA LARGE"
+  - If product_name cannot be normalized to match any of the active products, set it to "not_found"
+  - Extract product_size and normalize it to one of: "X-SMALL", "SMALL", "MEDIUM", "LARGE", "EXTRA LARGE", "EXTRA EXTRA LARGE" using these rules:
+    * XS, xs -> "X-SMALL"
+    * S, s -> "SMALL"
+    * M, m -> "MEDIUM"
+    * L, l -> "LARGE"
+    * XL, xl -> "EXTRA LARGE"
+    * XXL, xxl -> "EXTRA EXTRA LARGE"
+  - If product_size cannot be normalized to one of these values, set it to "not_found"
   - Extract email if provided
   - Reset product parameters if a new product is mentioned
+
+  IMPORTANT: For promo_code intent:
+  - Extract email if provided
+  - Look for keywords like "discount", "promo", "offer", "sale", "descuento", "promoción", "oferta", "rebajas"
+  - If user expresses interest in future discounts or promotions, classify as promo_code even if no explicit discount request
+  - Maintain email from previous messages if user is clearly continuing the same discount conversation
 
   Output ONLY a JSON object with the following structure:
   {
@@ -69,8 +85,8 @@ export class AIService {
       "delivery_address_confirmed": "true if user explicitly confirms system's proposed address, false otherwise",
       "return_type": "return or exchange or empty string",
       "returns_website_sent": "true if returns website URL was already sent, false otherwise",
-      "product_name": "name of product being asked about or empty string",
-      "product_size": "X-SMALL" | "SMALL" | "MEDIUM" | "LARGE" | "EXTRA LARGE" | "",
+      "product_name": "name of product being asked about, 'not_found' if cannot be normalized, or empty string",
+      "product_size": "X-SMALL" | "SMALL" | "MEDIUM" | "LARGE" | "EXTRA LARGE" | "EXTRA EXTRA LARGE" | "not_found" | "",
       "size_query": "true if asking about sizing, empty string otherwise",
       "update_type": "shipping_address or product or empty string if not specified",
       "height": "height in cm or empty string",
@@ -237,6 +253,7 @@ export class AIService {
   - If user asks about changing the size of a product from their order, classify it as returns_exchange intent
   - If user asks about product sizes or sizing information, classify it as product_sizing intent
   - If user asks about when a product will be back in stock, classify it as restock intent
+  - If user asks about discounts, promotions, or wants to receive offers, classify it as promo_code intent and extract their email
   - If the user says "thank you", "thanks", "gracias", "ok", "perfect", "perfecto" or similar closing remarks without asking anything else, classify it as "conversation_end"
   - For queries that don't match other intents but are about an order (shipping, delivery, order status, etc), classify as "other-order"
   - For queries that don't match other intents and are not related to any order, classify as "other-general"
@@ -246,12 +263,28 @@ export class AIService {
   - Extract height in cm if provided
   - Extract fit preference (tight, regular, loose)
   - Set size_query to "true" if asking about sizing
-  - Extract product name or type if mentioned
+  - Extract product_name and normalize it to match one of the active products: ${this.activeProducts.join(", ")}
+  - If product_name cannot be normalized to match any of the active products, set it to "not_found"
 
   For restock queries:
   - Extract product_name and normalize it to match one of the active products: ${this.activeProducts.join(", ")}
-  - Extract product_size and normalize it to one of: "X-SMALL", "SMALL", "MEDIUM", "LARGE", "EXTRA LARGE"
+  - If product_name cannot be normalized to match any of the active products, set it to "not_found"
+  - Extract product_size and normalize it to one of: "X-SMALL", "SMALL", "MEDIUM", "LARGE", "EXTRA LARGE", "EXTRA EXTRA LARGE" using these rules:
+    * XS, xs -> "X-SMALL"
+    * S, s -> "SMALL"
+    * M, m -> "MEDIUM"
+    * L, l -> "LARGE"
+    * XL, xl -> "EXTRA LARGE"
+    * XXL, xxl -> "EXTRA EXTRA LARGE"
+  - If product_size cannot be normalized to one of these values, set it to "not_found"
   - Extract email if provided
+  - Reset product parameters if a new product is mentioned
+
+  IMPORTANT: For promo_code intent:
+  - Extract email if provided
+  - Look for keywords like "discount", "promo", "offer", "sale", "descuento", "promoción", "oferta", "rebajas"
+  - If user expresses interest in future discounts or promotions, classify as promo_code even if no explicit discount request
+  - Maintain email from previous messages if user is clearly continuing the same discount conversation
 
   Output ONLY a JSON object with the following structure:
   {
@@ -266,8 +299,8 @@ export class AIService {
       "delivery_address_confirmed": "true if user explicitly confirms system's proposed address, false otherwise",
       "return_type": "return or exchange or empty string",
       "returns_website_sent": "true if returns website URL was already sent, false otherwise",
-      "product_name": "name of product being asked about or empty string",
-      "product_size": "X-SMALL" | "SMALL" | "MEDIUM" | "LARGE" | "EXTRA LARGE" | "",
+      "product_name": "name of product being asked about, 'not_found' if cannot be normalized, or empty string",
+      "product_size": "X-SMALL" | "SMALL" | "MEDIUM" | "LARGE" | "EXTRA LARGE" | "EXTRA EXTRA LARGE" | "not_found" | "",
       "size_query": "true if asking about sizing, empty string otherwise",
       "update_type": "shipping_address or product or empty string if not specified",
       "height": "height in cm or empty string",
@@ -527,7 +560,6 @@ export class AIService {
     language?: string
   ): Promise<string> {
     const { new_delivery_info } = parameters;
-    console.log("Entro en confirmDeliveryAddress", new_delivery_info);
 
     if (!new_delivery_info) {
       return language === "Spanish"
@@ -601,7 +633,6 @@ IMPORTANT: You MUST respond in ${language || "English"}`;
   }
 
   async validateAddress(address: string) {
-    console.log("Entro en validateAddress", address);
     if (!address || typeof address !== "string") {
       return {
         formattedAddress: "",

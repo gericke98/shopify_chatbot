@@ -8,6 +8,7 @@ export type Intent =
   | "other-order"
   | "restock"
   | "conversation_end"
+  | "promo_code"
   | "other-general";
 
 export interface MessageParameters {

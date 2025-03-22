@@ -9,6 +9,7 @@ import {
   handleDeliveryIssue,
   handleProductInquiry,
   handleProductInquiryRestock,
+  handlePromoCode,
   handleUpdateOrder,
   InvalidCredentials,
   NoOrderNumberOrEmail,
@@ -181,12 +182,9 @@ export async function POST(req: NextRequest): Promise<Response> {
         case "update_order":
           return handleUpdateOrder(parameters, message, context, language);
         case "restock":
-          return handleProductInquiryRestock(
-            parameters,
-            message,
-            context,
-            language
-          );
+          return handleProductInquiryRestock(parameters, language);
+        case "promo_code":
+          return handlePromoCode(parameters, message, context, language);
         case "other-order":
           if (!parameters.order_number || !parameters.email) {
             return language === "Spanish"
