@@ -437,10 +437,9 @@ export async function createPromoCode(): Promise<{
   console.log("Creating new promo code");
 
   try {
-    const query = `mutation CreateDiscount($input: DiscountCodeBasicInput!) {
-      discountCodeBasicCreate(basicCodeDiscount: $input) {
+    const query = `mutation discountCodeBasicCreate($basicCodeDiscount: DiscountCodeBasicInput!) {
+      discountCodeBasicCreate(basicCodeDiscount: $basicCodeDiscount) {
         codeDiscountNode {
-          id
           codeDiscount {
             ... on DiscountCodeBasic {
               title
@@ -473,8 +472,8 @@ export async function createPromoCode(): Promise<{
           query,
           variables: {
             input: {
-              title: "PRUEBA20",
-              code: "PRUEBA20",
+              title: `DISCOUNT${Math.random().toString(36).substring(2, 7).toUpperCase()}`,
+              code: `SAVE${Math.random().toString(36).substring(2, 7).toUpperCase()}`,
               startsAt: new Date().toISOString(),
               endsAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
               customerSelection: {
@@ -497,24 +496,23 @@ export async function createPromoCode(): Promise<{
 
     const data = await response.json();
 
-    if (!data.data?.CreateDiscount) {
+    if (!data.data?.discountCodeBasicCreate) {
       return {
         success: false,
         error: data.errors?.[0]?.message || "Failed to create discount",
       };
     }
 
-    if (data.data.CreateDiscount.userErrors.length > 0) {
+    if (data.data.discountCodeBasicCreate.userErrors.length > 0) {
       return {
         success: false,
-        error: data.data.CreateDiscount.userErrors[0].message,
+        error: data.data.discountCodeBasicCreate.userErrors[0].message,
       };
     }
-
     return {
       success: true,
-      code: data.data.CreateDiscount.codeDiscountNode.codeDiscount.codes
-        .nodes[0].code,
+      code: data.data.discountCodeBasicCreate.codeDiscountNode.codeDiscount
+        .codes.nodes[0].code,
     };
   } catch (error) {
     console.error("Error creating discount:", error);

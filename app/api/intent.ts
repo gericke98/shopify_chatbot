@@ -703,7 +703,11 @@ export async function handleProductInquiryRestock(
         ? `¡Perfecto! Te avisaremos en ${email} cuando el ${productTitle} esté disponible 😊`
         : `Perfect! We'll notify you at ${email} when the ${productTitle} is back in stock 😊`;
     } else {
-      // Handle the error case more gracefully
+      if (response.error == "Email has already been taken") {
+        return language === "Spanish"
+          ? `Vaya! Parece que ese email ya lo tenemos registrado. ¿Podrías intentarlo con otro?`
+          : `Oops! It seems that email is already registered. Could you try with another one?`;
+      }
       console.error("Error creating customer:", response.error);
       return language === "Spanish"
         ? "Lo siento, ha ocurrido un error al registrar tu correo. ¿Podrías intentarlo de nuevo?"
@@ -723,6 +727,7 @@ export async function handlePromoCode(
   language: string
 ): Promise<string> {
   const { email } = parameters;
+  console.log("parameters", parameters);
   if (!email || typeof email !== "string") {
     return language === "Spanish"
       ? "Vamos a hacer una cosa, si me dejas tu email te crearé un descuento del 20% que podrás usar durante los próximos 15 minutos😊"
@@ -730,8 +735,15 @@ export async function handlePromoCode(
   }
   // Create customer
   const response = await insertCustomer(email);
+  if (response.error == "Email has already been taken") {
+    return language === "Spanish"
+      ? `Vaya! Parece que ese email ya lo tenemos registrado. ¿Podrías intentarlo con otro?`
+      : `Oops! It seems that email is already registered. Could you try with another one?`;
+  }
+  console.log("response customer", response);
   if (response.success) {
     const promoCode = await createPromoCode();
+    console.log("promoCode", promoCode);
     if (promoCode.success) {
       return language === "Spanish"
         ? `Aquí tienes tu descuento del 20%: ${promoCode.code}. No se lo digas a nadie! Caduca en 15 minutos por lo que aprovéchalo!`
