@@ -89,14 +89,14 @@ export default function FloatingChat() {
         />
       </Head>
       <div
-        className={`fixed z-50 ${isMobile ? "inset-0 pointer-events-none" : "bottom-6 right-6"}`}
+        className={`fixed z-40 ${isMobile ? "inset-0 pointer-events-none" : "bottom-6 right-6"}`}
       >
         <div
-          className={`${isMobile ? "h-full flex flex-col justify-end" : "flex items-end gap-4"}`}
+          className={`${isMobile ? "h-full flex flex-col-reverse justify-end" : "flex items-end gap-4"}`}
         >
           {(isOpen || isMinimized) && currentTicket && (
             <div
-              className={`bg-white shadow-xl overflow-hidden pointer-events-auto transition-all duration-300 ease-in-out transform
+              className={`bg-white shadow-xl overflow-hidden pointer-events-auto transition-all duration-300 ease-in-out z-50
                 ${isMinimized ? "scale-75 opacity-75 hover:scale-90 hover:opacity-100" : "scale-100 opacity-100"}
                 ${
                   isMobile
@@ -105,7 +105,7 @@ export default function FloatingChat() {
                 }`}
             >
               <div className="w-full h-full flex flex-col">
-                <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-4 flex justify-between items-center relative">
+                <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-4 flex justify-between items-center relative flex-shrink-0">
                   <div className="absolute inset-0 bg-white/10 backdrop-blur-sm"></div>
                   <div className="flex items-center gap-3 relative z-10">
                     <div className="w-10 h-10 relative overflow-hidden rounded-full bg-white p-1 ring-2 ring-white/50 shadow-lg">
@@ -179,11 +179,11 @@ export default function FloatingChat() {
               </div>
             </div>
           )}
-          <div className="relative">
+          <div className="fixed bottom-3 right-3 z-40">
             <button
               onClick={handleChatOpen}
               className={`group bg-gradient-to-r from-blue-500 to-blue-600 shadow-lg hover:shadow-xl transition-all duration-300 
-                hover:scale-105 pointer-events-auto rounded-full p-3 relative z-10
+                hover:scale-105 pointer-events-auto rounded-full p-3 relative
                 ${isMobile ? "m-4 ml-auto" : ""}
                 ${isMinimized ? "ring-4 ring-blue-400/30 animate-pulse" : ""}`}
               aria-label="Open chat"
