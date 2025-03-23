@@ -27,6 +27,7 @@ export class AIService {
   - If user asks about product sizes or sizing information, classify it as product_sizing intent
   - If user asks about when a product will be back in stock, classify it as restock intent
   - If user asks about discounts, promotions, or wants to receive offers, classify it as promo_code intent and extract their email
+  - If user asks for an invoice or "factura", classify it as invoice_request intent and extract order number and email
   - If the user says "thank you", "thanks", "gracias", "ok", "perfect", "perfecto" or similar closing remarks without asking anything else, classify it as "conversation_end"
   - For queries that don't match other intents but are about an order (shipping, delivery, order status, etc), classify as "other-order"
   - For queries that don't match other intents and are not related to any order, classify as "other-general"
@@ -72,9 +73,15 @@ export class AIService {
   - If user expresses interest in future discounts or promotions, classify as promo_code even if no explicit discount request
   - Maintain email from previous messages if user is clearly continuing the same discount conversation
 
+  IMPORTANT: For invoice_request intent:
+  - Extract order number and email (required for invoice generation)
+  - Look for keywords like "invoice", "factura", "receipt", "recibo"
+  - Maintain order number and email from previous messages if clearly referring to the same order
+  - If order information is missing, set order_number and email to empty strings
+
   Output ONLY a JSON object with the following structure:
   {
-    "intent": one of ["order_tracking", "returns_exchange", "change_delivery", "return_status", "promo_code", "other-order", "other-general", "delivery_issue", "conversation_end", "product_sizing", "update_order", "restock"],
+    "intent": one of ["order_tracking", "returns_exchange", "change_delivery", "return_status", "promo_code", "other-order", "other-general", "delivery_issue", "conversation_end", "product_sizing", "update_order", "restock", "invoice_request"],
     "parameters": {
       "order_number": "extracted order number or empty string",
       "email": "extracted email or empty string", 
@@ -254,6 +261,7 @@ export class AIService {
   - If user asks about product sizes or sizing information, classify it as product_sizing intent
   - If user asks about when a product will be back in stock, classify it as restock intent
   - If user asks about discounts, promotions, or wants to receive offers, classify it as promo_code intent and extract their email
+  - If user asks for an invoice or "factura", classify it as invoice_request intent and extract order number and email
   - If the user says "thank you", "thanks", "gracias", "ok", "perfect", "perfecto" or similar closing remarks without asking anything else, classify it as "conversation_end"
   - For queries that don't match other intents but are about an order (shipping, delivery, order status, etc), classify as "other-order"
   - For queries that don't match other intents and are not related to any order, classify as "other-general"
@@ -286,9 +294,15 @@ export class AIService {
   - If user expresses interest in future discounts or promotions, classify as promo_code even if no explicit discount request
   - Maintain email from previous messages if user is clearly continuing the same discount conversation
 
+  IMPORTANT: For invoice_request intent:
+  - Extract order number and email (required for invoice generation)
+  - Look for keywords like "invoice", "factura", "receipt", "recibo"
+  - Maintain order number and email from previous messages if clearly referring to the same order
+  - If order information is missing, set order_number and email to empty strings
+
   Output ONLY a JSON object with the following structure:
   {
-    "intent": one of ["order_tracking", "returns_exchange", "change_delivery", "return_status", "promo_code", "other-order", "other-general", "delivery_issue", "conversation_end", "product_sizing", "update_order", "restock"],
+    "intent": one of ["order_tracking", "returns_exchange", "change_delivery", "return_status", "promo_code", "other-order", "other-general", "delivery_issue", "conversation_end", "product_sizing", "update_order", "restock", "invoice_request"],
     "parameters": {
       "order_number": "extracted order number or empty string",
       "email": "extracted email or empty string", 

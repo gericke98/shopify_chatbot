@@ -13,7 +13,8 @@ export type Intent =
   | "other-general"
   | "restock"
   | "other-order"
-  | "update_order";
+  | "update_order"
+  | "invoice_request";
 
 export type ClassifiedMessage = {
   intent: Intent;
@@ -49,26 +50,34 @@ export type OrderFulfillment = {
   tracking_number: string;
   tracking_url: string;
 };
+
+export type Address = {
+  name: string;
+  address1: string;
+  phone?: string;
+  city: string;
+  country: string;
+  province: string;
+  zip: string;
+  address2?: string;
+  country_name?: string;
+  country_code?: string;
+  first_name?: string;
+  last_name?: string;
+};
+
 export type Order = {
   id: string;
   name: string;
   subtotal_price: string;
   contact_email: string;
   admin_graphql_api_id: string;
-  shipping_address: {
-    name: string;
-    address1: string;
-    address2: string;
-    city: string;
-    country: string;
-    zip: string;
-    province: string;
-    country_name: string;
-    country_code: string;
-    first_name: string;
-    last_name: string;
-    phone: string;
-  };
+  shipping_address: Address;
+  billing_address: Address;
+  line_items: OrderLineItem[];
+  total_price: string;
+  current_subtotal_price: string;
+  created_at: string;
   customer: CustomerData | undefined;
   fulfillments: OrderFulfillment[];
 };
@@ -89,6 +98,7 @@ export type OrderLineItem = {
   discount_allocations?: DiscountAllocation[];
   product_id: number;
 };
+
 export type DiscountAllocation = {
   amount: number;
 };
@@ -100,8 +110,8 @@ export type ShopifyData = {
 
 export type ShopifyDataTracking = {
   success: boolean;
-  error?: "InvalidOrderNumber" | "EmailMismatch" | undefined;
-  order?: Order | undefined;
+  error?: "InvalidOrderNumber" | "EmailMismatch";
+  order?: Order;
 };
 
 export type ShopifyDataProduct = {
@@ -109,6 +119,7 @@ export type ShopifyDataProduct = {
   handle: string;
   product?: Product;
 };
+
 export type Product = {
   title: string;
   description: string;
@@ -116,6 +127,7 @@ export type Product = {
   handle: string;
   status: string;
 };
+
 export type Image = {
   src: string;
 };
@@ -157,23 +169,54 @@ export type CustomerData = {
   last_name: string;
 };
 
+export type Size = "XS" | "S" | "M" | "L" | "XL" | "XXL" | "XXXL" | "ONE SIZE";
+
+export type MeasurementType = {
+  name: string;
+  unit: "cm" | "in";
+  values: Partial<Record<Size, number>>;
+};
+
 export type SizeChart = {
   sizes: Size[];
   measurements: MeasurementType[];
   productType: string;
 };
 
-type Size = "XS" | "S" | "M" | "L" | "XL" | "XXL" | "XXXL" | "ONE SIZE";
-
-type MeasurementType = {
-  name: string; // e.g., "Chest", "Length", "Sleeve", "Waist"
-  unit: "cm" | "in"; // centimeters or inches
-  values: {
-    [key in Size]?: number;
-  };
-};
-
 export type ChatMessage = {
   role: string;
   content: string;
+};
+
+export type EmailData = {
+  From: string;
+  To: string;
+  Subject: string;
+  TextBody: string;
+  HtmlBody: string;
+  MessageStream: string;
+  Attachments?: Array<{
+    Name: string;
+    Content: string;
+    ContentType: string;
+  }>;
+};
+
+export type InvoiceData = {
+  name: string;
+  direccion: string;
+  auxiliarAddress: string;
+  phone: string | null;
+  invoiceNumber: string;
+  date: string;
+  pedidoList: OrderItem[];
+  ivaBool: boolean;
+  subtotalInput: number;
+};
+
+export type OrderItem = {
+  name: string;
+  quantity: string;
+  price: string;
+  total: string;
 };

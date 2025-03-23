@@ -349,10 +349,15 @@ export const Chat = ({
             }}
             style={{ height: textareaHeight }}
             placeholder="Type a message..."
-            className="w-full resize-none rounded-xl border border-gray-200 p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px] max-h-[120px] text-gray-900 bg-white/80 backdrop-blur-sm transition-all duration-200"
+            className="w-full resize-none rounded-xl border border-gray-200 p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px] max-h-[120px] text-gray-900 bg-white/80 backdrop-blur-sm transition-all duration-200 text-base"
             rows={1}
             disabled={isLoading}
             aria-label="Message input"
+            autoComplete="off"
+            autoCorrect="off"
+            spellCheck="false"
+            inputMode="text"
+            enterKeyHint="send"
           />
         </div>
         <div className="relative z-10 flex items-center self-end h-[44px]">

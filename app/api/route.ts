@@ -7,6 +7,7 @@ import { getMessages } from "@/app/actions/tickets";
 import {
   handleChangeDelivery,
   handleDeliveryIssue,
+  handleInvoiceRequest,
   handleProductInquiry,
   handleProductInquiryRestock,
   handlePromoCode,
@@ -184,7 +185,9 @@ export async function POST(req: NextRequest): Promise<Response> {
         case "restock":
           return handleProductInquiryRestock(parameters, language);
         case "promo_code":
-          return handlePromoCode(parameters, message, context, language);
+          return handlePromoCode(parameters, language);
+        case "invoice_request":
+          return handleInvoiceRequest(parameters, language);
         case "other-order":
           if (!parameters.order_number || !parameters.email) {
             return language === "Spanish"

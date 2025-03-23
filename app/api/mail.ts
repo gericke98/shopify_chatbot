@@ -1,4 +1,29 @@
+import { EmailData } from "@/types";
 import axios from "axios";
+
+function generateEmailTemplateInvoice(orderNumber: string) {
+  return {
+    From: "hello@shamelesscollective.com",
+    To: "hello@shamelesscollective.com",
+    Subject: `Factura de tu pedido ${orderNumber}`,
+    TextBody: "Aquí tienes tu factura!",
+    HtmlBody: `
+        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; background-color: #f9f9f9; padding: 20px; border: 1px solid #ddd; border-radius: 8px; max-width: 600px; margin: 20px auto;">
+          <!-- Spanish Section -->
+          <div>
+            <p style="font-size: 16px; color: #555;"><strong>Hola!</strong>,</p>
+            <p style="font-size: 16px; color: #555;">
+              Adjuntamos la factura de tu pedido ${orderNumber}! Muchas gracias por confiar en Shameless Collective!
+            </p>
+            <p style="font-size: 16px; color: #555;">
+              Saludos cordiales,<br/>
+              <strong>El equipo de Shameless Collective</strong>
+            </p>
+          </div>
+        </div>
+      `,
+  };
+}
 
 function generateEmailTemplate(orderNumber: string, email: string) {
   return {
@@ -27,7 +52,8 @@ function generateEmailTemplate(orderNumber: string, email: string) {
 export async function sendEmail(
   recipientEmail: string,
   orderNumber: string,
-  userEmail: string
+  userEmail: string,
+  pdfBuffer?: Buffer
 ): Promise<{ status: number; error?: string }> {
   const POSTMARK_API_URL = "https://api.postmarkapp.com/email";
   const postmarkToken = process.env.POSTMARK_SERVER_TOKEN;
@@ -36,12 +62,26 @@ export async function sendEmail(
   }
 
   try {
-    const emailTemplate = generateEmailTemplate(orderNumber, userEmail);
-    const emailData = {
+    let emailTemplate = generateEmailTemplate(orderNumber, userEmail);
+    if (pdfBuffer) {
+      emailTemplate = generateEmailTemplateInvoice(orderNumber);
+    }
+    const emailData: EmailData = {
       ...emailTemplate,
       To: recipientEmail,
       MessageStream: "outbound",
     };
+
+    // Add attachment if PDF buffer is provided
+    if (pdfBuffer) {
+      emailData.Attachments = [
+        {
+          Name: `invoice-${orderNumber}.pdf`,
+          Content: pdfBuffer.toString("base64"),
+          ContentType: "application/pdf",
+        },
+      ];
+    }
 
     const result = await axios.post(POSTMARK_API_URL, emailData, {
       headers: {
@@ -50,6 +90,7 @@ export async function sendEmail(
         "X-Postmark-Server-Token": postmarkToken,
       },
     });
+
     return { status: result.status };
   } catch (error: unknown) {
     if (axios.isAxiosError(error)) {
