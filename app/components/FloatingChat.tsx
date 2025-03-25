@@ -12,7 +12,6 @@ export default function FloatingChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentTicket, setCurrentTicket] = useState<Ticket>();
   const [isMobile, setIsMobile] = useState(false);
-  const [isMinimized, setIsMinimized] = useState(false);
   const [showUnreadBadge, setShowUnreadBadge] = useState(false);
 
   useEffect(() => {
@@ -26,21 +25,22 @@ export default function FloatingChat() {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  // Show unread badge when chat is minimized and new messages arrive
+  // Show unread badge when new messages arrive and chat is closed
   useEffect(() => {
-    if (isMinimized && messages.length > 0) {
+    if (!isOpen && messages.length > 0) {
       const lastMessage = messages[messages.length - 1];
       if (lastMessage.sender === "bot") {
         setShowUnreadBadge(true);
       }
     }
-  }, [messages, isMinimized]);
+  }, [messages, isOpen]);
 
   const handleMessagesUpdate = (newMessages: Message[]) => {
     setMessages(newMessages);
   };
 
   const handleChatOpen = async () => {
+    console.log("handleChatOpen");
     if (!currentTicket) {
       setIsLoading(true);
       try {
@@ -60,7 +60,7 @@ export default function FloatingChat() {
             },
           ]);
           setIsOpen(true);
-          setIsMinimized(false);
+          setShowUnreadBadge(false);
         }
       } catch (error) {
         console.error("Error creating chat:", error);
@@ -70,14 +70,8 @@ export default function FloatingChat() {
     } else {
       // Just toggle visibility if we already have a ticket
       setIsOpen(!isOpen);
-      setIsMinimized(false);
       setShowUnreadBadge(false);
     }
-  };
-
-  const handleMinimize = () => {
-    setIsMinimized(true);
-    setIsOpen(false);
   };
 
   return (
@@ -89,15 +83,15 @@ export default function FloatingChat() {
         />
       </Head>
       <div
-        className={`fixed z-40 ${isMobile ? "inset-0 pointer-events-none" : "bottom-6 right-6"}`}
+        className={`fixed z-40 ${isMobile ? "inset-0" : "bottom-6 right-6"}`}
       >
         <div
-          className={`${isMobile ? "h-full flex flex-col-reverse justify-end" : "flex items-end gap-4"}`}
+          className={`${isMobile ? "h-full flex flex-col-reverse justify-end" : "flex flex-col-reverse items-end gap-4"}`}
         >
-          {(isOpen || isMinimized) && currentTicket && (
+          {isOpen && currentTicket && (
             <div
-              className={`bg-white shadow-xl overflow-hidden pointer-events-auto transition-all duration-300 ease-in-out z-50
-                ${isMinimized ? "scale-75 opacity-75 hover:scale-90 hover:opacity-100" : "scale-100 opacity-100"}
+              className={`bg-white shadow-xl overflow-hidden pointer-events-auto transition-all duration-300 ease-in-out z-[60]
+                scale-100 opacity-100
                 ${
                   isMobile
                     ? "w-full h-[85vh] rounded-t-2xl fixed bottom-0 left-0 right-0"
@@ -127,25 +121,6 @@ export default function FloatingChat() {
                     </div>
                   </div>
                   <div className="flex gap-2 relative z-10">
-                    <button
-                      onClick={handleMinimize}
-                      className="p-2 hover:bg-white/20 rounded-full transition-colors backdrop-blur-sm"
-                      aria-label="Minimize chat"
-                    >
-                      <svg
-                        className="w-5 h-5 text-white"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M20 12H4"
-                        />
-                      </svg>
-                    </button>
                     {isMobile && (
                       <button
                         onClick={() => setIsOpen(false)}
@@ -179,13 +154,12 @@ export default function FloatingChat() {
               </div>
             </div>
           )}
-          <div className="fixed bottom-3 right-3 z-40">
+          <div className="fixed bottom-4 right-4 z-50">
             <button
               onClick={handleChatOpen}
               className={`group bg-gradient-to-r from-blue-500 to-blue-600 shadow-lg hover:shadow-xl transition-all duration-300 
-                hover:scale-105 pointer-events-auto rounded-full p-3 relative
-                ${isMobile ? "m-4 ml-auto" : ""}
-                ${isMinimized ? "ring-4 ring-blue-400/30 animate-pulse" : ""}`}
+                hover:scale-105 rounded-full p-3 relative cursor-pointer
+                ${isMobile ? "m-4 ml-auto" : ""}`}
               aria-label="Open chat"
             >
               {isLoading ? (
@@ -199,7 +173,7 @@ export default function FloatingChat() {
                       src="/logo.png"
                       alt="Chat with us"
                       fill
-                      className="object-contain"
+                      className="object-contain pointer-events-none"
                     />
                   </div>
                 </div>
@@ -210,7 +184,7 @@ export default function FloatingChat() {
                 1
               </div>
             )}
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-blue-600/20 blur-xl rounded-full scale-150 animate-pulse"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-blue-600/20 blur-xl rounded-full scale-150 animate-pulse pointer-events-none"></div>
           </div>
         </div>
       </div>
