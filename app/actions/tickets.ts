@@ -61,6 +61,7 @@ const messageSchema = z.object({
   }),
   text: z.string().min(1, "Message content cannot be empty"),
   timestamp: z.string().optional(),
+  shop: z.string().optional(),
 });
 
 const customerDataSchema = z
@@ -137,6 +138,8 @@ export async function createTicket(userMessage: Message) {
         id: ticketId,
         orderNumber: null,
         email: null,
+        name: null,
+        shop: userMessage.shop || "unknown",
         status: "open",
         createdAt: formatDate(new Date().toISOString()),
         updatedAt: formatDate(new Date().toISOString()),
@@ -151,6 +154,8 @@ export async function createTicket(userMessage: Message) {
           id: ticketId,
           orderNumber: null,
           email: null,
+          name: null,
+          shop: userMessage.shop || "unknown",
           status: "open",
           createdAt: formatDate(new Date().toISOString()),
           updatedAt: formatDate(new Date().toISOString()),

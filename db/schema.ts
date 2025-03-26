@@ -7,6 +7,7 @@ export const tickets = pgTable("tickets", {
   orderNumber: text("order_number"),
   email: text("email"),
   name: text("name"),
+  shop: text("shop").notNull(),
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
   status: text("status").notNull(),

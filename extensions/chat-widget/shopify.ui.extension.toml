@@ -1,0 +1,24 @@
+type = "theme_app_extension"
+name = "Shameless Chat Widget"
+
+[capabilities]
+block_progress = true
+network_access = true
+api_access = true
+
+[extension_points]
+  - "theme_app_extension"
+  - "theme_app_extension_blocks"
+
+[settings]
+  - name = "chat_enabled"
+    type = "boolean"
+    description = "Enable chat widget"
+    default = true
+
+[metafields]
+  - namespace = "chat"
+    key = "enabled"
+    type = "boolean"
+    description = "Enable chat widget"
+    owner_scope = "shop" 

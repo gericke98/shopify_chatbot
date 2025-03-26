@@ -1,0 +1,28 @@
+{% schema %}
+{
+  "name": "Shameless Chat",
+  "target": "body",
+  "stylesheet": "chat-widget.css",
+  "javascript": "chat-widget.js",
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "chat_enabled",
+      "label": "Enable chat widget",
+      "default": true
+    }
+  ]
+}
+{% endschema %}
+
+{% if settings.chat_enabled %}
+  <div id="shameless-chat-widget" data-shop="{{ shop.permanent_domain }}"></div>
+  <script>
+    window.SHAMELESS_CHAT_CONFIG = {
+      shop: {{ shop.permanent_domain | json }},
+      apiKey: {{ settings.chat_api_key | json }},
+      theme: {{ settings.chat_theme | json }}
+    };
+  </script>
+  <script src="https://shopify-chatbot-two.vercel.app/chat-widget.js" async></script>
+{% endif %} 

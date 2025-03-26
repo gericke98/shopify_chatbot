@@ -2,7 +2,14 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AppProvider as PolarisAppProvider } from "@shopify/polaris";
+import { createApp } from "@shopify/app-bridge";
 import "@shopify/polaris/build/esm/styles.css";
+
+declare global {
+  interface Window {
+    app: ReturnType<typeof createApp>;
+  }
+}
 
 const queryClient = new QueryClient();
 
@@ -11,7 +18,18 @@ export function ShopifyAppBridgeProvider({
 }: {
   children: React.ReactNode;
 }) {
-  return <>{children}</>;
+  const config = {
+    apiKey: process.env.NEXT_PUBLIC_SHOPIFY_API_KEY || "",
+    host:
+      typeof window !== "undefined"
+        ? new URLSearchParams(window.location.search).get("host") || ""
+        : "",
+  };
+
+  const app = createApp(config);
+  window.app = app; // Make app available globally
+
+  return <div data-shopify-app-bridge-provider>{children}</div>;
 }
 
 export function QueryProvider({ children }: { children: React.ReactNode }) {

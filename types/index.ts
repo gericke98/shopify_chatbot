@@ -157,6 +157,7 @@ export type Message = {
   text: string;
   timestamp: string;
   ticketId?: string | null;
+  shop?: string;
 };
 
 export type OpenAIMessage = {

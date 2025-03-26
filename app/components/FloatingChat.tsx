@@ -7,7 +7,11 @@ import Head from "next/head";
 import { createTicket } from "../actions/tickets";
 import { toast } from "sonner";
 
-export default function FloatingChat() {
+type FloatingChatProps = {
+  shop: string;
+};
+
+export default function FloatingChat({ shop }: FloatingChatProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -53,7 +57,10 @@ export default function FloatingChat() {
         };
 
         // Create ticket in database
-        const response = await createTicket(initialMessage);
+        const response = await createTicket({
+          ...initialMessage,
+          shop,
+        });
 
         if (response.status === 200 && response.data) {
           setCurrentTicket(response.data);
