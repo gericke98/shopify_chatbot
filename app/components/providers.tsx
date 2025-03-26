@@ -31,7 +31,10 @@ export function ShopifyAppBridgeProvider({
 
   const config = {
     apiKey: process.env.NEXT_PUBLIC_SHOPIFY_API_KEY || "",
-    host: new URLSearchParams(window.location.search).get("host") || "",
+    host:
+      typeof window !== "undefined"
+        ? new URLSearchParams(window.location.search).get("host") || ""
+        : "",
   };
 
   const app = createApp(config);
