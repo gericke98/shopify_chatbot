@@ -5,6 +5,7 @@ import { AppProvider as PolarisAppProvider } from "@shopify/polaris";
 import { createApp } from "@shopify/app-bridge";
 import "@shopify/polaris/build/esm/styles.css";
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 declare global {
   interface Window {
@@ -21,20 +22,18 @@ export function ShopifyAppBridgeProvider({
 }) {
   const [isClient, setIsClient] = useState(false);
   const [app, setApp] = useState<ReturnType<typeof createApp> | null>(null);
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     setIsClient(true);
     const config = {
       apiKey: process.env.NEXT_PUBLIC_SHOPIFY_API_KEY || "",
-      host:
-        typeof window !== "undefined"
-          ? new URLSearchParams(window.location.search).get("host") || ""
-          : "",
+      host: searchParams.get("host") || "",
     };
     const newApp = createApp(config);
     window.app = newApp;
     setApp(newApp);
-  }, []);
+  }, [searchParams]);
 
   if (!isClient || !app) {
     return <>{children}</>;
