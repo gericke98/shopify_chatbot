@@ -20,25 +20,22 @@ export function ShopifyAppBridgeProvider({
   children: React.ReactNode;
 }) {
   const [isClient, setIsClient] = useState(false);
+  const [app, setApp] = useState<ReturnType<typeof createApp> | null>(null);
 
   useEffect(() => {
     setIsClient(true);
+    const config = {
+      apiKey: process.env.NEXT_PUBLIC_SHOPIFY_API_KEY || "",
+      host: new URLSearchParams(window.location.search).get("host") || "",
+    };
+    const newApp = createApp(config);
+    window.app = newApp;
+    setApp(newApp);
   }, []);
 
-  if (!isClient) {
+  if (!isClient || !app) {
     return <>{children}</>;
   }
-
-  const config = {
-    apiKey: process.env.NEXT_PUBLIC_SHOPIFY_API_KEY || "",
-    host:
-      typeof window !== "undefined"
-        ? new URLSearchParams(window.location.search).get("host") || ""
-        : "",
-  };
-
-  const app = createApp(config);
-  window.app = app; // Make app available globally
 
   return <div data-shopify-app-bridge-provider>{children}</div>;
 }
