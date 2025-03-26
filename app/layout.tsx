@@ -1,13 +1,18 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import {
+  ShopifyAppBridgeProvider,
+  QueryProvider,
+  PolarisProvider,
+} from "./components/providers";
 import FloatingChat from "./components/FloatingChat";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Shameless Collective Support",
-  description: "Chat with our support team",
+  title: "Shameless Chatbot",
+  description: "A chatbot for your Shopify store",
 };
 
 export default function RootLayout({
@@ -24,8 +29,14 @@ export default function RootLayout({
         />
       </head>
       <body className={inter.className}>
-        {children}
-        <FloatingChat />
+        <ShopifyAppBridgeProvider>
+          <QueryProvider>
+            <PolarisProvider>
+              {children}
+              <FloatingChat shop="default" />
+            </PolarisProvider>
+          </QueryProvider>
+        </ShopifyAppBridgeProvider>
       </body>
     </html>
   );
