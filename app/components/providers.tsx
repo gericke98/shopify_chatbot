@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AppProvider as PolarisAppProvider } from "@shopify/polaris";
 import { createApp } from "@shopify/app-bridge";
 import "@shopify/polaris/build/esm/styles.css";
+import { useEffect, useState } from "react";
 
 declare global {
   interface Window {
@@ -18,12 +19,19 @@ export function ShopifyAppBridgeProvider({
 }: {
   children: React.ReactNode;
 }) {
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  if (!isClient) {
+    return <>{children}</>;
+  }
+
   const config = {
     apiKey: process.env.NEXT_PUBLIC_SHOPIFY_API_KEY || "",
-    host:
-      typeof window !== "undefined"
-        ? new URLSearchParams(window.location.search).get("host") || ""
-        : "",
+    host: new URLSearchParams(window.location.search).get("host") || "",
   };
 
   const app = createApp(config);
