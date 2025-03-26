@@ -1,0 +1,27 @@
+{
+  "name": "Shameless Chatbot",
+  "client_id": "9b0907b06fe80d8f36031eb1b807ed08",
+  "application_url": "https://shopify-chatbot-two.vercel.app",
+  "embedded": true,
+  "access_scopes": {
+    "scopes": "write_products,read_products,write_orders,read_orders"
+  },
+  "webhooks": {
+    "api_version": "2025-01"
+  },
+  "auth_callback_url": "https://shopify-chatbot-two.vercel.app/auth/callback",
+  "app_preferences": {
+    "url": "https://shopify-chatbot-two.vercel.app/settings"
+  },
+  "app_proxy": {
+    "url": "https://shopify-chatbot-two.vercel.app/proxy",
+    "subpath": "apps/shameless-chatbot"
+  },
+  "pos": {
+    "embedded": false
+  },
+  "build": {
+    "automatically_update_urls_on_dev": true,
+    "dev_store_url": "shameless-test.myshopify.com"
+  }
+}

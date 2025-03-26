@@ -334,33 +334,46 @@ export async function updateTicketAdmin(ticketId: string, admin: boolean) {
 
 export async function addMessageToTicket(ticketId: string, message: Message) {
   try {
-    // Use localhost:3000 in development and production URL in production
-    const baseUrl =
-      process.env.NODE_ENV === "development"
-        ? process.env.DEVELOPMENT_URL
-        : process.env.PRODUCTION_URL;
+    // Validate input
+    const validatedMessage = messageSchema.parse(message);
+    const validatedId = ticketIdSchema.parse(ticketId);
 
-    const response = await fetch(`${baseUrl}/api/messages`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ ticketId, message }),
-    });
+    // Insert message directly into database
+    const newMessage = await db
+      .insert(messages)
+      .values({
+        sender: validatedMessage.sender,
+        text: validatedMessage.text,
+        timestamp: formatDate(new Date().toISOString()),
+        ticketId: validatedId,
+      })
+      .returning();
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Error adding message:", {
-        status: response.status,
-        statusText: response.statusText,
-        body: errorText,
-      });
-      throw new Error(`HTTP error! status: ${response.status}\n${errorText}`);
-    }
+    // Update ticket's updatedAt timestamp
+    await db
+      .update(tickets)
+      .set({
+        updatedAt: formatDate(new Date().toISOString()),
+      })
+      .where(eq(tickets.id, validatedId));
 
-    return await response.json();
+    revalidatePath("/");
+    return {
+      status: 200,
+      data: newMessage[0],
+    };
   } catch (error) {
-    console.error("Error adding message:", error);
-    throw error;
+    if (error instanceof z.ZodError) {
+      console.error("[VALIDATION ERROR] Invalid message data:", error.errors);
+      return {
+        status: 400,
+        error: `Validation error: ${error.errors[0].message}`,
+      };
+    }
+    console.error("[ERROR] Failed to add message:", error);
+    return {
+      status: 500,
+      error: "Failed to add message",
+    };
   }
 }

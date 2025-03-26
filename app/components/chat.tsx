@@ -53,120 +53,15 @@ export const Chat = ({
     }
   }, [handleScroll]);
 
-  // Initial setup from props with error boundary
+  // Update messages when input messages change
   useEffect(() => {
-    try {
-      if (JSON.stringify(messages) !== JSON.stringify(inputmessages)) {
-        setMessages(inputmessages);
-      }
-      if (currentTicket?.id !== inputcurrentTicket?.id) {
-        setCurrentTicket(inputcurrentTicket);
-      }
-    } catch (err) {
-      console.error("Error updating chat state:", err);
-      toast.error(
-        "There was an error updating the chat. Please refresh the page.",
-        {
-          duration: 5000,
-          position: "top-center",
-        }
-      );
-    }
-  }, [inputmessages, inputcurrentTicket, messages, currentTicket]);
+    setMessages(inputmessages);
+  }, [inputmessages]);
 
-  // Auto-resize textarea with debounce
-  const adjustTextareaHeight = useCallback(() => {
-    if (!textareaRef.current) return;
-
-    textareaRef.current.style.height = "44px";
-    const scrollHeight = textareaRef.current.scrollHeight;
-    const newHeight = Math.min(scrollHeight, 120);
-    textareaRef.current.style.height = `${newHeight}px`;
-    setTextareaHeight(`${newHeight}px`);
-  }, []);
-
-  // Optimized bot response handler
-  const getBotResponse = useCallback(
-    async (userMessage: string) => {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000);
-
-      try {
-        console.log("Sending request to API:", {
-          message: userMessage,
-          context: messages.map((msg) => ({
-            role: msg.sender === "user" ? "user" : "assistant",
-            content: msg.text,
-          })),
-          currentTicket,
-        });
-
-        const response = await fetch("/api", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            message: userMessage,
-            context: messages.map((msg) => ({
-              role: msg.sender === "user" ? "user" : "assistant",
-              content: msg.text,
-            })),
-            currentTicket,
-          }),
-          signal: controller.signal,
-        });
-
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error("API Response not OK:", {
-            status: response.status,
-            statusText: response.statusText,
-            body: errorText,
-          });
-          throw new Error(
-            `Error ${response.status}: ${response.statusText}\n${errorText}`
-          );
-        }
-
-        const data = await response.json();
-        console.log("API Response:", data);
-
-        if (data.data?.response) {
-          const botMessage = {
-            sender: "bot",
-            text: data.data.response,
-            timestamp: new Date().toISOString(),
-          };
-
-          if (currentTicket?.id) {
-            await addMessageToTicket(currentTicket.id, botMessage);
-            // Get the current messages from state to ensure we have the latest
-            setMessages((prevMessages) => {
-              const updatedMessages = [...prevMessages, botMessage];
-              onMessagesUpdate(updatedMessages);
-              return updatedMessages;
-            });
-          }
-        } else {
-          console.error("No response in data:", data);
-          throw new Error("No response received from bot");
-        }
-      } catch (err: unknown) {
-        if (err instanceof Error && err.name === "AbortError") {
-          toast.error("Request timed out. Please try again.");
-        } else {
-          toast.error(
-            `Failed to get response: ${err instanceof Error ? err.message : "Unknown error"}`
-          );
-        }
-        console.error("Bot response error:", err);
-      }
-    },
-    [currentTicket, onMessagesUpdate]
-  );
+  // Update current ticket when input ticket changes
+  useEffect(() => {
+    setCurrentTicket(inputcurrentTicket);
+  }, [inputcurrentTicket]);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -194,15 +89,59 @@ export const Chat = ({
       setMessages(updatedMessages);
       onMessagesUpdate(updatedMessages);
 
-      // Finally get bot response
-      await getBotResponse(userMessage);
-    } catch (err) {
-      toast.error("Failed to send message. Please try again.");
-      console.error("Message submission error:", err);
+      // Get bot response
+      const response = await fetch("/api", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          message: userMessage,
+          context: updatedMessages.map((msg) => ({
+            role: msg.sender === "user" ? "user" : "assistant",
+            content: msg.text,
+          })),
+          currentTicket,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to get bot response");
+      }
+
+      const data = await response.json();
+      if (data.data?.response) {
+        const botMessage = {
+          sender: "bot",
+          text: data.data.response,
+          timestamp: new Date().toISOString(),
+        };
+
+        if (currentTicket.id) {
+          await addMessageToTicket(currentTicket.id, botMessage);
+          const messagesWithBotResponse = [...updatedMessages, botMessage];
+          setMessages(messagesWithBotResponse);
+          onMessagesUpdate(messagesWithBotResponse);
+        }
+      }
+    } catch (error) {
+      console.error("Error sending message:", error);
+      toast.error("Failed to send message");
     } finally {
       setIsLoading(false);
     }
   };
+
+  // Auto-resize textarea with debounce
+  const adjustTextareaHeight = useCallback(() => {
+    if (!textareaRef.current) return;
+
+    textareaRef.current.style.height = "44px";
+    const scrollHeight = textareaRef.current.scrollHeight;
+    const newHeight = Math.min(scrollHeight, 120);
+    textareaRef.current.style.height = `${newHeight}px`;
+    setTextareaHeight(`${newHeight}px`);
+  }, []);
 
   // Scroll to bottom button
   const ScrollToBottomButton = () =>

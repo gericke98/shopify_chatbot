@@ -1,10 +1,11 @@
 "use client";
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { createTicket } from "../actions/tickets";
 import { Chat } from "./chat";
 import { Message, Ticket } from "@/types";
 import Head from "next/head";
+import { createTicket } from "../actions/tickets";
+import { toast } from "sonner";
 
 export default function FloatingChat() {
   const [isOpen, setIsOpen] = useState(false);
@@ -44,26 +45,27 @@ export default function FloatingChat() {
     if (!currentTicket) {
       setIsLoading(true);
       try {
-        const ticket = await createTicket({
+        // Create initial bot message
+        const initialMessage = {
           sender: "bot",
           text: "👋 Hi! I'm Santi from Shameless Collective. What can I help you with?",
           timestamp: new Date().toISOString(),
-        });
+        };
 
-        if (ticket.status === 200 && "data" in ticket && ticket.data?.id) {
-          setCurrentTicket(ticket.data);
-          setMessages([
-            {
-              sender: "bot",
-              text: "👋 Hi! I'm Santi from Shameless Collective. What can I help you with?",
-              timestamp: new Date().toISOString(),
-            },
-          ]);
+        // Create ticket in database
+        const response = await createTicket(initialMessage);
+
+        if (response.status === 200 && response.data) {
+          setCurrentTicket(response.data);
+          setMessages([initialMessage]);
           setIsOpen(true);
           setShowUnreadBadge(false);
+        } else {
+          throw new Error(response.error || "Failed to create ticket");
         }
       } catch (error) {
         console.error("Error creating chat:", error);
+        toast.error("Failed to start chat. Please try again.");
       } finally {
         setIsLoading(false);
       }

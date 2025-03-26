@@ -1,72 +1,72 @@
 {
   "node": {
-    "28b45457f431ffd5acda5cc9c2a17ba333d8c41c": {
+    "07ca3f503642efbfef0b641ae46ea922c58d360d": {
       "workers": {
-        "app/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot_v2%2Fapp%2Factions%2Ftickets.ts%22%2C%5B%22%24%24ACTION_0%22%2C%22updateTicketWithOrderInfo%22%2C%22addMessageToTicket%22%2C%22createTicket%22%2C%22getTicket%22%2C%22updateTicketAdmin%22%2C%22%24%24ACTION_1%22%2C%22getTickets%22%2C%22getMessages%22%5D%5D%5D&__client_imported__=true!"
+        "app/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fshameless-chatbot_v1%2Fapp%2Factions%2Ftickets.ts%22%2C%5B%22createTicket%22%2C%22getTicket%22%2C%22updateTicketAdmin%22%2C%22updateTicketWithOrderInfo%22%2C%22%24%24ACTION_1%22%2C%22%24%24ACTION_0%22%2C%22getMessages%22%2C%22addMessageToTicket%22%2C%22getTickets%22%5D%5D%5D&__client_imported__=true!"
       },
       "layer": {
         "app/page": "action-browser"
       }
     },
-    "3084d38da97d6c49c6b3ef2e790b60985082b290": {
+    "098719dc81758a1eaa756a797abf980a9508bde5": {
       "workers": {
-        "app/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot_v2%2Fapp%2Factions%2Ftickets.ts%22%2C%5B%22%24%24ACTION_0%22%2C%22updateTicketWithOrderInfo%22%2C%22addMessageToTicket%22%2C%22createTicket%22%2C%22getTicket%22%2C%22updateTicketAdmin%22%2C%22%24%24ACTION_1%22%2C%22getTickets%22%2C%22getMessages%22%5D%5D%5D&__client_imported__=true!"
+        "app/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fshameless-chatbot_v1%2Fapp%2Factions%2Ftickets.ts%22%2C%5B%22createTicket%22%2C%22getTicket%22%2C%22updateTicketAdmin%22%2C%22updateTicketWithOrderInfo%22%2C%22%24%24ACTION_1%22%2C%22%24%24ACTION_0%22%2C%22getMessages%22%2C%22addMessageToTicket%22%2C%22getTickets%22%5D%5D%5D&__client_imported__=true!"
       },
       "layer": {
         "app/page": "action-browser"
       }
     },
-    "4c79b9b003d035bc4a1db5355d5620e0667613a4": {
+    "19d35d8c1c23505690f586028ca1aea9f52f0d90": {
       "workers": {
-        "app/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot_v2%2Fapp%2Factions%2Ftickets.ts%22%2C%5B%22%24%24ACTION_0%22%2C%22updateTicketWithOrderInfo%22%2C%22addMessageToTicket%22%2C%22createTicket%22%2C%22getTicket%22%2C%22updateTicketAdmin%22%2C%22%24%24ACTION_1%22%2C%22getTickets%22%2C%22getMessages%22%5D%5D%5D&__client_imported__=true!"
+        "app/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fshameless-chatbot_v1%2Fapp%2Factions%2Ftickets.ts%22%2C%5B%22createTicket%22%2C%22getTicket%22%2C%22updateTicketAdmin%22%2C%22updateTicketWithOrderInfo%22%2C%22%24%24ACTION_1%22%2C%22%24%24ACTION_0%22%2C%22getMessages%22%2C%22addMessageToTicket%22%2C%22getTickets%22%5D%5D%5D&__client_imported__=true!"
       },
       "layer": {
         "app/page": "action-browser"
       }
     },
-    "87690bbc6c766a12c6a6c50967dce01565da4b0b": {
+    "3735081ba545213bf88f95e90bf55e09523dd6c9": {
       "workers": {
-        "app/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot_v2%2Fapp%2Factions%2Ftickets.ts%22%2C%5B%22%24%24ACTION_0%22%2C%22updateTicketWithOrderInfo%22%2C%22addMessageToTicket%22%2C%22createTicket%22%2C%22getTicket%22%2C%22updateTicketAdmin%22%2C%22%24%24ACTION_1%22%2C%22getTickets%22%2C%22getMessages%22%5D%5D%5D&__client_imported__=true!"
+        "app/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fshameless-chatbot_v1%2Fapp%2Factions%2Ftickets.ts%22%2C%5B%22createTicket%22%2C%22getTicket%22%2C%22updateTicketAdmin%22%2C%22updateTicketWithOrderInfo%22%2C%22%24%24ACTION_1%22%2C%22%24%24ACTION_0%22%2C%22getMessages%22%2C%22addMessageToTicket%22%2C%22getTickets%22%5D%5D%5D&__client_imported__=true!"
       },
       "layer": {
         "app/page": "action-browser"
       }
     },
-    "98a5722ddb8340096b3a7f7c2e89c3f87b61cec7": {
+    "37e2dee4ba14e7a881bbac2a23cdec4a2aa8ba46": {
       "workers": {
-        "app/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot_v2%2Fapp%2Factions%2Ftickets.ts%22%2C%5B%22%24%24ACTION_0%22%2C%22updateTicketWithOrderInfo%22%2C%22addMessageToTicket%22%2C%22createTicket%22%2C%22getTicket%22%2C%22updateTicketAdmin%22%2C%22%24%24ACTION_1%22%2C%22getTickets%22%2C%22getMessages%22%5D%5D%5D&__client_imported__=true!"
+        "app/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fshameless-chatbot_v1%2Fapp%2Factions%2Ftickets.ts%22%2C%5B%22createTicket%22%2C%22getTicket%22%2C%22updateTicketAdmin%22%2C%22updateTicketWithOrderInfo%22%2C%22%24%24ACTION_1%22%2C%22%24%24ACTION_0%22%2C%22getMessages%22%2C%22addMessageToTicket%22%2C%22getTickets%22%5D%5D%5D&__client_imported__=true!"
       },
       "layer": {
         "app/page": "action-browser"
       }
     },
-    "9d9fcbdbbd305ddff15c091a7eca4d3e41f61799": {
+    "3a8e0f52df6d53b36183cefa0aeed21475bb59d7": {
       "workers": {
-        "app/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot_v2%2Fapp%2Factions%2Ftickets.ts%22%2C%5B%22%24%24ACTION_0%22%2C%22updateTicketWithOrderInfo%22%2C%22addMessageToTicket%22%2C%22createTicket%22%2C%22getTicket%22%2C%22updateTicketAdmin%22%2C%22%24%24ACTION_1%22%2C%22getTickets%22%2C%22getMessages%22%5D%5D%5D&__client_imported__=true!"
+        "app/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fshameless-chatbot_v1%2Fapp%2Factions%2Ftickets.ts%22%2C%5B%22createTicket%22%2C%22getTicket%22%2C%22updateTicketAdmin%22%2C%22updateTicketWithOrderInfo%22%2C%22%24%24ACTION_1%22%2C%22%24%24ACTION_0%22%2C%22getMessages%22%2C%22addMessageToTicket%22%2C%22getTickets%22%5D%5D%5D&__client_imported__=true!"
       },
       "layer": {
         "app/page": "action-browser"
       }
     },
-    "aaa65bc9a296f1038a7b2d62e7f67881a0e309cd": {
+    "5fed7b0564a28f32d562b1cf81cac710121c46ab": {
       "workers": {
-        "app/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot_v2%2Fapp%2Factions%2Ftickets.ts%22%2C%5B%22%24%24ACTION_0%22%2C%22updateTicketWithOrderInfo%22%2C%22addMessageToTicket%22%2C%22createTicket%22%2C%22getTicket%22%2C%22updateTicketAdmin%22%2C%22%24%24ACTION_1%22%2C%22getTickets%22%2C%22getMessages%22%5D%5D%5D&__client_imported__=true!"
+        "app/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fshameless-chatbot_v1%2Fapp%2Factions%2Ftickets.ts%22%2C%5B%22createTicket%22%2C%22getTicket%22%2C%22updateTicketAdmin%22%2C%22updateTicketWithOrderInfo%22%2C%22%24%24ACTION_1%22%2C%22%24%24ACTION_0%22%2C%22getMessages%22%2C%22addMessageToTicket%22%2C%22getTickets%22%5D%5D%5D&__client_imported__=true!"
       },
       "layer": {
         "app/page": "action-browser"
       }
     },
-    "cf1da2657bce2cda80b174b39af711243eded4b0": {
+    "6bbedaf62e92cc393e76ddc5dd6e04855f7bb0a1": {
       "workers": {
-        "app/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot_v2%2Fapp%2Factions%2Ftickets.ts%22%2C%5B%22%24%24ACTION_0%22%2C%22updateTicketWithOrderInfo%22%2C%22addMessageToTicket%22%2C%22createTicket%22%2C%22getTicket%22%2C%22updateTicketAdmin%22%2C%22%24%24ACTION_1%22%2C%22getTickets%22%2C%22getMessages%22%5D%5D%5D&__client_imported__=true!"
+        "app/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fshameless-chatbot_v1%2Fapp%2Factions%2Ftickets.ts%22%2C%5B%22createTicket%22%2C%22getTicket%22%2C%22updateTicketAdmin%22%2C%22updateTicketWithOrderInfo%22%2C%22%24%24ACTION_1%22%2C%22%24%24ACTION_0%22%2C%22getMessages%22%2C%22addMessageToTicket%22%2C%22getTickets%22%5D%5D%5D&__client_imported__=true!"
       },
       "layer": {
         "app/page": "action-browser"
       }
     },
-    "fbe66ed2c322f76a505e2d0ac61cf7f2b4beb277": {
+    "ddf4f219862e3bfa256c9fc1e4fed38e2087bd27": {
       "workers": {
-        "app/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fmy-shopify-chatbot_v2%2Fapp%2Factions%2Ftickets.ts%22%2C%5B%22%24%24ACTION_0%22%2C%22updateTicketWithOrderInfo%22%2C%22addMessageToTicket%22%2C%22createTicket%22%2C%22getTicket%22%2C%22updateTicketAdmin%22%2C%22%24%24ACTION_1%22%2C%22getTickets%22%2C%22getMessages%22%5D%5D%5D&__client_imported__=true!"
+        "app/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fsantiagogerickeparga%2FDesktop%2FAI%2Fshameless-chatbot_v1%2Fapp%2Factions%2Ftickets.ts%22%2C%5B%22createTicket%22%2C%22getTicket%22%2C%22updateTicketAdmin%22%2C%22updateTicketWithOrderInfo%22%2C%22%24%24ACTION_1%22%2C%22%24%24ACTION_0%22%2C%22getMessages%22%2C%22addMessageToTicket%22%2C%22getTickets%22%5D%5D%5D&__client_imported__=true!"
       },
       "layer": {
         "app/page": "action-browser"
@@ -74,5 +74,5 @@
     }
   },
   "edge": {},
-  "encryptionKey": "SairnqiJ3V8IeNzApvwEgnDLSHUYNOrgyJOZZ/nt9Zw="
+  "encryptionKey": "0WKTDK/W61hCt+R2miuvwyrnsU1Q0DqPSK/f8i4fbl4="
 }
