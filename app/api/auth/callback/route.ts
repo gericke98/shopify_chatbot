@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { createHmac } from "crypto";
+import db from "@/db/drizzle";
+import { shops } from "@/db/schema";
 
 export async function GET(request: Request) {
   try {
@@ -57,8 +59,22 @@ export async function GET(request: Request) {
 
     const { access_token } = await tokenResponse.json();
 
-    // Store the access token securely (you should implement this)
-    // await storeAccessToken(shop, access_token);
+    // Store the access token in the database
+    await db
+      .insert(shops)
+      .values({
+        shop,
+        accessToken: access_token,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      })
+      .onConflictDoUpdate({
+        target: shops.shop,
+        set: {
+          accessToken: access_token,
+          updatedAt: new Date().toISOString(),
+        },
+      });
 
     // Redirect to the app's main page
     return NextResponse.redirect(new URL("/", request.url));

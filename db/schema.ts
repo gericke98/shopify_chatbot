@@ -34,4 +34,11 @@ export const messagesRelations = relations(messages, ({ one }) => ({
   }),
 }));
 
+export const shops = pgTable("shops", {
+  shop: text("shop").primaryKey().notNull(),
+  accessToken: text("access_token").notNull(),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+});
+
 // CODE TO UPDATE TABLA SCHEMA  npx drizzle-kit push:pg
