@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AppProvider as PolarisAppProvider } from "@shopify/polaris";
 import { createApp } from "@shopify/app-bridge";
 import "@shopify/polaris/build/esm/styles.css";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 
 declare global {
@@ -15,11 +15,7 @@ declare global {
 
 const queryClient = new QueryClient();
 
-export function ShopifyAppBridgeProvider({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+function AppBridgeProviderContent({ children }: { children: React.ReactNode }) {
   const [isClient, setIsClient] = useState(false);
   const [app, setApp] = useState<ReturnType<typeof createApp> | null>(null);
   const searchParams = useSearchParams();
@@ -40,6 +36,18 @@ export function ShopifyAppBridgeProvider({
   }
 
   return <div data-shopify-app-bridge-provider>{children}</div>;
+}
+
+export function ShopifyAppBridgeProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <Suspense fallback={<>{children}</>}>
+      <AppBridgeProviderContent>{children}</AppBridgeProviderContent>
+    </Suspense>
+  );
 }
 
 export function QueryProvider({ children }: { children: React.ReactNode }) {
