@@ -7,12 +7,6 @@ import "@shopify/polaris/build/esm/styles.css";
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 
-declare global {
-  interface Window {
-    app: ReturnType<typeof createApp>;
-  }
-}
-
 const queryClient = new QueryClient();
 
 function AppBridgeProviderContent({ children }: { children: React.ReactNode }) {
@@ -27,7 +21,6 @@ function AppBridgeProviderContent({ children }: { children: React.ReactNode }) {
       host: searchParams.get("host") || "",
     };
     const newApp = createApp(config);
-    window.app = newApp;
     setApp(newApp);
   }, [searchParams]);
 
