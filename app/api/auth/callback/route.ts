@@ -3,6 +3,8 @@ import { createHmac } from "crypto";
 import db from "@/db/drizzle";
 import { shops } from "@/db/schema";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
