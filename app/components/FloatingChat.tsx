@@ -2,24 +2,55 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { Chat } from "./chat";
-import { Message, Ticket } from "@/types";
-import Head from "next/head";
 import { createTicket } from "../actions/tickets";
-import { toast } from "sonner";
+import type { Message, Ticket } from "@/types";
+import Head from "next/head";
 
-type FloatingChatProps = {
+interface FloatingChatProps {
   shop: string;
-};
+}
 
 export default function FloatingChat({ shop }: FloatingChatProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [currentTicket, setCurrentTicket] = useState<Ticket | undefined>(
+    undefined
+  );
   const [messages, setMessages] = useState<Message[]>([]);
-  const [currentTicket, setCurrentTicket] = useState<Ticket>();
+  const [isClient, setIsClient] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [showUnreadBadge, setShowUnreadBadge] = useState(false);
 
   useEffect(() => {
+    setIsClient(true);
+    const initializeChat = async () => {
+      try {
+        const initialMessage: Message = {
+          text: "Hello! How can I help you today?",
+          sender: "bot",
+          timestamp: new Date().toISOString(),
+          shop,
+        };
+        const response = await createTicket(initialMessage);
+        if (response.status === 200 && response.data) {
+          setCurrentTicket(response.data);
+          setMessages([initialMessage]);
+        } else {
+          console.error("Failed to create ticket:", response.error);
+        }
+      } catch (error) {
+        console.error("Error initializing chat:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initializeChat();
+  }, [shop]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
@@ -32,56 +63,17 @@ export default function FloatingChat({ shop }: FloatingChatProps) {
 
   // Show unread badge when new messages arrive and chat is closed
   useEffect(() => {
-    if (!isOpen && messages.length > 0) {
+    if (!isVisible && messages.length > 0) {
       const lastMessage = messages[messages.length - 1];
       if (lastMessage.sender === "bot") {
         setShowUnreadBadge(true);
       }
     }
-  }, [messages, isOpen]);
+  }, [messages, isVisible]);
 
-  const handleMessagesUpdate = (newMessages: Message[]) => {
-    setMessages(newMessages);
-  };
-
-  const handleChatOpen = async () => {
-    console.log("handleChatOpen");
-    if (!currentTicket) {
-      setIsLoading(true);
-      try {
-        // Create initial bot message
-        const initialMessage = {
-          sender: "bot",
-          text: "👋 Hi! I'm Santi from Shameless Collective. What can I help you with?",
-          timestamp: new Date().toISOString(),
-        };
-
-        // Create ticket in database
-        const response = await createTicket({
-          ...initialMessage,
-          shop,
-        });
-
-        if (response.status === 200 && response.data) {
-          setCurrentTicket(response.data);
-          setMessages([initialMessage]);
-          setIsOpen(true);
-          setShowUnreadBadge(false);
-        } else {
-          throw new Error(response.error || "Failed to create ticket");
-        }
-      } catch (error) {
-        console.error("Error creating chat:", error);
-        toast.error("Failed to start chat. Please try again.");
-      } finally {
-        setIsLoading(false);
-      }
-    } else {
-      // Just toggle visibility if we already have a ticket
-      setIsOpen(!isOpen);
-      setShowUnreadBadge(false);
-    }
-  };
+  if (!isClient) {
+    return null;
+  }
 
   return (
     <>
@@ -97,7 +89,7 @@ export default function FloatingChat({ shop }: FloatingChatProps) {
         <div
           className={`${isMobile ? "h-full flex flex-col-reverse justify-end" : "flex flex-col-reverse items-end gap-4"}`}
         >
-          {isOpen && currentTicket && (
+          {isVisible && currentTicket && (
             <div
               className={`bg-white shadow-xl overflow-hidden pointer-events-auto transition-all duration-300 ease-in-out z-[60]
                 scale-100 opacity-100
@@ -132,7 +124,7 @@ export default function FloatingChat({ shop }: FloatingChatProps) {
                   <div className="flex gap-2 relative z-10">
                     {isMobile && (
                       <button
-                        onClick={() => setIsOpen(false)}
+                        onClick={() => setIsVisible(false)}
                         className="p-2 hover:bg-white/20 rounded-full transition-colors backdrop-blur-sm"
                         aria-label="Close chat"
                       >
@@ -157,37 +149,74 @@ export default function FloatingChat({ shop }: FloatingChatProps) {
                   <Chat
                     inputmessages={messages}
                     inputcurrentTicket={currentTicket}
-                    onMessagesUpdate={handleMessagesUpdate}
+                    onMessagesUpdate={setMessages}
                   />
                 </div>
               </div>
             </div>
           )}
           <div className="fixed bottom-4 right-4 z-50">
-            <button
-              onClick={handleChatOpen}
-              className={`group bg-gradient-to-r from-blue-500 to-blue-600 shadow-lg hover:shadow-xl transition-all duration-300 
-                hover:scale-105 rounded-full p-3 relative cursor-pointer
-                ${isMobile ? "m-4 ml-auto" : ""}`}
-              aria-label="Open chat"
-            >
-              {isLoading ? (
-                <div className="w-14 h-14 flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+            {!isVisible ? (
+              <button
+                onClick={() => setIsVisible(true)}
+                className="bg-blue-600 text-white rounded-full p-4 shadow-lg hover:bg-blue-700 transition-colors"
+                aria-label="Open chat"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+                  />
+                </svg>
+              </button>
+            ) : (
+              <div className="bg-white rounded-lg shadow-xl w-96 h-[600px] flex flex-col">
+                <div className="p-4 border-b flex justify-between items-center">
+                  <h2 className="text-lg font-semibold">Chat Support</h2>
+                  <button
+                    onClick={() => setIsVisible(false)}
+                    className="text-gray-500 hover:text-gray-700"
+                    aria-label="Close chat"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-6 w-6"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
                 </div>
-              ) : (
-                <div className="w-14 h-14 relative overflow-hidden rounded-full bg-white/90 transition-transform group-hover:scale-90 shadow-inner">
-                  <div className="absolute inset-1">
-                    <Image
-                      src="/logo.png"
-                      alt="Chat with us"
-                      fill
-                      className="object-contain pointer-events-none"
+                <div className="flex-1 overflow-hidden">
+                  {isLoading ? (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    </div>
+                  ) : (
+                    <Chat
+                      inputmessages={messages}
+                      inputcurrentTicket={currentTicket}
+                      onMessagesUpdate={setMessages}
                     />
-                  </div>
+                  )}
                 </div>
-              )}
-            </button>
+              </div>
+            )}
             {showUnreadBadge && (
               <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold ring-2 ring-white animate-bounce z-20">
                 1

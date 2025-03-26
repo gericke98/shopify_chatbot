@@ -31,12 +31,10 @@ export default function RootLayout({
       <body className={inter.className}>
         <ShopifyAppBridgeProvider>
           <QueryProvider>
-            <PolarisProvider>
-              {children}
-              <FloatingChat shop="default" />
-            </PolarisProvider>
+            <PolarisProvider>{children}</PolarisProvider>
           </QueryProvider>
         </ShopifyAppBridgeProvider>
+        <FloatingChat shop="default" />
       </body>
     </html>
   );
