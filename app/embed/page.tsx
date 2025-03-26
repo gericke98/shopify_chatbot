@@ -6,7 +6,7 @@ import FloatingChat from "../components/FloatingChat";
 
 export default function EmbedPage() {
   const searchParams = useSearchParams();
-  const shop = searchParams.get("shop");
+  const shop = searchParams.get("shop") || "unknown";
 
   useEffect(() => {
     // Handle communication with parent window
@@ -23,7 +23,7 @@ export default function EmbedPage() {
 
   return (
     <div className="h-screen w-full">
-      <FloatingChat shop={shop || ""} />
+      <FloatingChat shop={shop} />
     </div>
   );
 }
