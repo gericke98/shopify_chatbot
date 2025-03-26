@@ -10,20 +10,22 @@ import FloatingChat from "./FloatingChat";
 
 export default function ShopifyAppWrapper() {
   useEffect(() => {
-    // Initialize Shopify App Bridge
-    if (typeof window !== "undefined") {
-      const script = document.createElement("script");
-      script.src = "https://unpkg.com/@shopify/app-bridge@3";
-      script.async = true;
-      document.body.appendChild(script);
-    }
+    // Load Shopify App Bridge script
+    const script = document.createElement("script");
+    script.src = "https://cdn.shopify.com/shopifycloud/app-bridge.js";
+    script.async = true;
+    document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
+    };
   }, []);
 
   return (
     <ShopifyAppBridgeProvider>
       <QueryProvider>
         <PolarisProvider>
-          <FloatingChat />
+          <FloatingChat shop="admin" />
         </PolarisProvider>
       </QueryProvider>
     </ShopifyAppBridgeProvider>
